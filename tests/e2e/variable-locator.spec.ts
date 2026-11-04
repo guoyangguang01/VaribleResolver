@@ -132,6 +132,67 @@ test("keeps the highlight layer aligned with the text layer after locating", asy
   expect(metrics.markBottom).toBeLessThanOrEqual(metrics.editorBottom);
 });
 
+test("associates a native browser DOM selection with a variable", async ({
+  page,
+}) => {
+  await page.locator(".codemirror-host").evaluate((host) => {
+    const view = (host as HTMLElement & { __cmView?: any }).__cmView;
+    const index = view.state.doc.toString().indexOf("Engineering Data");
+    view.dispatch({
+      selection: { anchor: index, head: index },
+      scrollIntoView: true,
+    });
+  });
+
+  await page.evaluate(() => {
+    const line = Array.from(document.querySelectorAll(".cm-line")).find(
+      (element) => element.textContent?.includes("Engineering Data"),
+    );
+    if (!line) throw new Error("Engineering Data line is not rendered");
+    const lineText = line.textContent ?? "";
+    const start = lineText.indexOf("Engineering Data");
+    const end = start + "Engineering Data".length;
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let startNode: Text | null = null;
+    let endNode: Text | null = null;
+    let startOffset = 0;
+    let endOffset = 0;
+    let node: Node | null;
+
+    while ((node = walker.nextNode())) {
+      const textNode = node as Text;
+      const nextOffset = offset + textNode.data.length;
+      if (!startNode && start >= offset && start < nextOffset) {
+        startNode = textNode;
+        startOffset = start - offset;
+      }
+      if (!endNode && end >= offset && end <= nextOffset) {
+        endNode = textNode;
+        endOffset = end - offset;
+        break;
+      }
+      offset = nextOffset;
+    }
+    if (!startNode || !endNode) throw new Error("Text nodes not found");
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(startNode, startOffset);
+    range.setEnd(endNode, endOffset);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
+
+  await expect(page.locator(".cm-variable-highlight")).toHaveText(
+    "Engineering Data",
+  );
+  await expect(page.locator(".variable-values > span").first()).toContainText(
+    "engineeringData1",
+  );
+});
+
 test("associates a selected CCL value with its material and property path", async ({
   page,
 }) => {
