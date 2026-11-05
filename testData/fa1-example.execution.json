@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "name": "fa1 标准执行示例",
+  "referenceConfig": "fa1.config",
+  "parameterSource": "fa1.config",
+  "program": "C:\\Program Files\\ANSYS Inc\\v195\\Framework\\bin\\Win64\\RunWB2.exe",
+  "arguments": "-B -R \"C:\\Cases\\fa1\\workbench.wbjn\"",
+  "workingDirectory": "C:\\Cases\\fa1",
+  "files": [
+    {
+      "path": "C:\\Cases\\fa1\\CFX1.ccl",
+      "asset": "CFX1.ccl"
+    },
+    {
+      "path": "C:\\Cases\\fa1\\Post.cse",
+      "asset": "Post.cse"
+    },
+    {
+      "path": "C:\\Cases\\fa1\\Mechanical_Thermal.py",
+      "asset": "Mechanical_Thermal.py"
+    },
+    {
+      "path": "C:\\Cases\\fa1\\Mechanical_Structural-2019.py",
+      "asset": "Mechanical_Structural-2019.py"
+    },
+    {
+      "path": "C:\\Cases\\fa1\\workbench.wbjn",
+      "asset": "workbench.wbjn"
+    },
+    {
+      "path": "C:\\Cases\\fa1\\Stress_Envelope_Summary.txt",
+      "asset": "fa1-example/Stress_Envelope_Summary.txt"
+    },
+    {
+      "path": "C:\\Cases\\fa1\\ResultManifest.txt",
+      "asset": "fa1-example/ResultManifest.txt"
+    }
+  ]
+}

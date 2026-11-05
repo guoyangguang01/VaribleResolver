@@ -1,0 +1,319 @@
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const { spawn } = require("node:child_process");
+
+const MAX_FILE_BYTES = 32 * 1024 * 1024;
+const MAX_OUTPUT_BYTES = 1024 * 1024;
+const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+
+let mainWindow = null;
+
+async function readTextFile(filePath) {
+  if (typeof filePath !== "string" || !filePath.trim()) {
+    throw new Error("文件路径不能为空。");
+  }
+  const absolutePath = path.resolve(filePath);
+  const stat = await fs.stat(absolutePath);
+  if (!stat.isFile()) throw new Error(`不是文件：${absolutePath}`);
+  if (stat.size > MAX_FILE_BYTES) {
+    throw new Error(`文件超过 32 MB：${absolutePath}`);
+  }
+  const buffer = await fs.readFile(absolutePath);
+  if (buffer.includes(0)) {
+    throw new Error(`检测到二进制内容：${absolutePath}`);
+  }
+  return {
+    path: absolutePath,
+    name: path.basename(absolutePath),
+    content: buffer.toString("utf8").replace(/\r\n?/g, "\n"),
+    size: stat.size,
+    modifiedAt: stat.mtimeMs,
+  };
+}
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1440,
+    height: 940,
+    minWidth: 980,
+    minHeight: 680,
+    show: false,
+    backgroundColor: "#f2efe6",
+    title: "Program Studio",
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devServerUrl) {
+    void mainWindow.loadURL(devServerUrl);
+  } else {
+    void mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  }
+
+  mainWindow.once("ready-to-show", () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.show();
+    mainWindow.focus();
+  });
+
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+
+ipcMain.handle("client:select-files", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "选择程序输入文件",
+    properties: ["openFile", "multiSelections"],
+  });
+  if (result.canceled) return [];
+  return Promise.all(result.filePaths.map(readTextFile));
+});
+
+ipcMain.handle("client:read-files", async (_event, filePaths) => {
+  if (!Array.isArray(filePaths)) throw new Error("文件路径列表无效。");
+  return Promise.all(filePaths.map(readTextFile));
+});
+
+ipcMain.handle("client:write-files", async (_event, files) => {
+  if (!Array.isArray(files)) throw new Error("文件列表无效。");
+  const written = [];
+  for (const file of files) {
+    if (
+      !file ||
+      typeof file.path !== "string" ||
+      typeof file.content !== "string"
+    ) {
+      throw new Error("文件写入参数无效。");
+    }
+    const absolutePath = path.resolve(file.path);
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.writeFile(absolutePath, file.content, "utf8");
+    written.push(absolutePath);
+  }
+  return written;
+});
+
+ipcMain.handle("client:save-project", async (_event, payload) => {
+  if (
+    !payload ||
+    typeof payload.folderName !== "string" ||
+    !payload.manifest ||
+    !payload.launch ||
+    !payload.parameters ||
+    !Array.isArray(payload.files)
+  ) {
+    throw new Error("工程目录数据无效。");
+  }
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "选择工程保存位置",
+    buttonLabel: "保存到此目录",
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+
+  const safeFolderName = payload.folderName
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
+    .replace(/[. ]+$/g, "")
+    .trim();
+  if (!safeFolderName) throw new Error("工程目录名称无效。");
+  const parentDirectory = path.resolve(result.filePaths[0]);
+  const projectDirectory = path.join(parentDirectory, safeFolderName);
+  try {
+    await fs.access(projectDirectory);
+    throw new Error(`工程目录已存在：${projectDirectory}`);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      // Directory does not exist, which is the expected state.
+    } else {
+      throw error;
+    }
+  }
+
+  await fs.mkdir(path.join(projectDirectory, "files"), { recursive: true });
+  await fs.writeFile(
+    path.join(projectDirectory, "project.json"),
+    JSON.stringify(payload.manifest, null, 2),
+    "utf8",
+  );
+  await fs.writeFile(
+    path.join(projectDirectory, "launch.json"),
+    JSON.stringify(payload.launch, null, 2),
+    "utf8",
+  );
+  await fs.writeFile(
+    path.join(projectDirectory, "parameters.json"),
+    JSON.stringify(payload.parameters, null, 2),
+    "utf8",
+  );
+  for (const file of payload.files) {
+    if (
+      !file ||
+      typeof file.relativePath !== "string" ||
+      typeof file.content !== "string"
+    ) {
+      throw new Error("工程封装文件参数无效。");
+    }
+    const targetPath = path.resolve(projectDirectory, file.relativePath);
+    const rootWithSeparator = `${path.resolve(projectDirectory)}${path.sep}`;
+    if (!targetPath.startsWith(rootWithSeparator)) {
+      throw new Error(`工程文件路径越界：${file.relativePath}`);
+    }
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.writeFile(targetPath, file.content, "utf8");
+  }
+  return {
+    path: projectDirectory,
+    name: payload.manifest.name,
+  };
+});
+
+ipcMain.handle("client:open-project", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "打开 Program Studio 工程",
+    buttonLabel: "打开工程",
+    properties: ["openDirectory"],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  const projectDirectory = path.resolve(result.filePaths[0]);
+  const manifestPath = path.join(projectDirectory, "project.json");
+  const launchPath = path.join(projectDirectory, "launch.json");
+  const parametersPath = path.join(projectDirectory, "parameters.json");
+  const [manifestSource, launchSource, parametersSource] = await Promise.all([
+    fs.readFile(manifestPath, "utf8"),
+    fs.readFile(launchPath, "utf8"),
+    fs.readFile(parametersPath, "utf8"),
+  ]);
+  const manifest = JSON.parse(manifestSource);
+  if (!Array.isArray(manifest.files)) {
+    throw new Error("project.json 缺少 files 文件清单。");
+  }
+  const rootWithSeparator = `${projectDirectory}${path.sep}`;
+  const files = await Promise.all(
+    manifest.files.map(async (entry) => {
+      if (!entry || typeof entry.relativePath !== "string") {
+        throw new Error("工程文件清单条目无效。");
+      }
+      const filePath = path.resolve(projectDirectory, entry.relativePath);
+      if (!filePath.startsWith(rootWithSeparator)) {
+        throw new Error(`工程文件路径越界：${entry.relativePath}`);
+      }
+      return {
+        relativePath: entry.relativePath,
+        content: (await fs.readFile(filePath)).toString("utf8"),
+      };
+    }),
+  );
+  return {
+    folderPath: projectDirectory,
+    manifest,
+    launch: JSON.parse(launchSource),
+    parameters: JSON.parse(parametersSource),
+    files,
+  };
+});
+
+ipcMain.handle("client:run-program", async (_event, request) => {
+  if (!request || typeof request.program !== "string" || !request.program.trim()) {
+    throw new Error("程序路径不能为空。");
+  }
+  const args = Array.isArray(request.args)
+    ? request.args.map((argument) => String(argument))
+    : [];
+  const cwd =
+    typeof request.cwd === "string" && request.cwd.trim()
+      ? path.resolve(request.cwd)
+      : undefined;
+  const timeoutMs = Math.max(
+    1000,
+    Math.min(
+      Number(request.timeoutMs) || DEFAULT_TIMEOUT_MS,
+      30 * 60 * 1000,
+    ),
+  );
+  const startedAt = Date.now();
+
+  return new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const child = spawn(request.program.trim(), args, {
+      cwd,
+      shell: false,
+      windowsHide: true,
+      env: process.env,
+    });
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        ...result,
+        stdout,
+        stderr,
+        durationMs: Date.now() - startedAt,
+      });
+    };
+
+    const timer = setTimeout(() => {
+      child.kill();
+      finish({
+        status: "timeout",
+        exitCode: null,
+        signal: null,
+        error: `程序超过 ${timeoutMs} ms 未结束。`,
+      });
+    }, timeoutMs);
+
+    child.stdout.on("data", (chunk) => {
+      if (stdout.length < MAX_OUTPUT_BYTES) {
+        stdout += chunk.toString("utf8").slice(0, MAX_OUTPUT_BYTES - stdout.length);
+      }
+    });
+    child.stderr.on("data", (chunk) => {
+      if (stderr.length < MAX_OUTPUT_BYTES) {
+        stderr += chunk.toString("utf8").slice(0, MAX_OUTPUT_BYTES - stderr.length);
+      }
+    });
+    child.once("error", (error) => {
+      finish({
+        status: "failed",
+        exitCode: null,
+        signal: null,
+        error: error.message,
+      });
+    });
+    child.once("close", (exitCode, signal) => {
+      finish({
+        status: exitCode === 0 ? "completed" : "failed",
+        exitCode,
+        signal,
+        error: null,
+      });
+    });
+  });
+});
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});

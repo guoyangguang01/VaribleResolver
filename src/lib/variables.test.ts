@@ -29,7 +29,6 @@ test("parses CCL variables, values, units, and block paths", () => {
   const target = findVariableTarget(
     CCL_SAMPLE,
     CCL_SAMPLE.indexOf("4181.7"),
-    "ccl",
   );
 
   assert.ok(target);
@@ -63,7 +62,6 @@ test("normalizes CRLF so textarea selections and parsed ranges align", () => {
   const target = findVariableTarget(
     source,
     source.indexOf("4181.7"),
-    "ccl",
   );
   assert.ok(target);
   assert.equal(
@@ -79,11 +77,10 @@ test("parses Python assignments while ignoring comparisons and keyword arguments
             body.Material = "material1"
 SetScriptVersion(Version="19.5")
 `;
-  const variables = parseVariables(source, "python");
+  const variables = parseVariables(source);
   const target = findVariableTarget(
     source,
     source.indexOf("body.Material"),
-    "python",
   );
 
   assert.equal(variables.length, 1);
@@ -109,7 +106,6 @@ matlProp1.SetData(
   const target = findVariableTarget(
     source,
     source.indexOf("7930 [kg m^-3]"),
-    "python",
   );
 
   assert.ok(target);
@@ -132,12 +128,10 @@ for body in bodies:
   const first = findVariableTarget(
     source,
     source.indexOf('body.Material = "material1"'),
-    "python",
   );
   const second = findVariableTarget(
     source,
     source.indexOf('body.Material = "material2"'),
-    "python",
   );
 
   assert.equal(first?.path[0], "target_body_name = fati");
@@ -150,7 +144,7 @@ for body in bodies:
 test("locates the content of a Python string literal without its syntax", () => {
   const value = "J:\\ST\\AW\\fa\\fa1\\GSP\\CFX_setup_0.ccl";
   const source = `dsScriptFileCFX2 = r"${value}"`;
-  const target = findVariableTarget(source, source.indexOf('r"'), "python");
+  const target = findVariableTarget(source, source.indexOf('r"'));
 
   assert.ok(target);
   assert.equal(target.variableName, "dsScriptFileCFX2");
@@ -166,7 +160,7 @@ test("associates a user selection with the matching parsed variable", () => {
 target_body_name = "fagai"
 target_body_name = "fagan"
 `;
-  const variables = parseVariables(source, "python");
+  const variables = parseVariables(source);
   const selected = findVariableAt(variables, source.indexOf('"fagai"'));
   assert.ok(selected);
 
@@ -175,7 +169,7 @@ target_body_name = "fagan"
   assert.equal(occurrences[0].value, "fagai");
 });
 
-test("parses embedded CCL inside a Workbench journal", () => {
+test("does not switch parsers for embedded text in another file format", () => {
   const source = `ccl_path = "model.ccl"
 ccl_content = """LIBRARY:
   MATERIAL: Water
@@ -186,23 +180,14 @@ ccl_content = """LIBRARY:
   END
 """
 `;
-  const variables = parseVariables(source, "workbench");
+  const variables = parseVariables(source);
   const target = variables.find(
     (variable) => variable.variableName === "Specific Heat Capacity",
   );
 
-  assert.ok(target);
-  assert.equal(target.material, "Water");
-  assert.deepEqual(target.path, [
-    "ccl_content · 内嵌 CCL",
-    "LIBRARY",
-    "MATERIAL: Water",
-    "PROPERTIES",
-    "SPECIFIC HEAT CAPACITY",
-  ]);
-  assert.equal(
-    source.slice(target.valueRange.start, target.valueRange.end),
-    "4181.7",
+  assert.equal(target, undefined);
+  assert.ok(
+    variables.some((variable) => variable.variableName === "ccl_content"),
   );
 });
 
@@ -217,7 +202,6 @@ END
   const target = findVariableTarget(
     source,
     source.indexOf("Bound Radius"),
-    "cse",
   );
   assert.ok(target);
   assert.equal(target.unit, "[m]");
@@ -232,17 +216,16 @@ END
   assert.equal(detectSourceFlavor(CCL_SAMPLE), "ccl");
 });
 
-test("parses all fixture formats in the testData folder", () => {
+test("parses all fixture formats through the same parser", () => {
   const fixtureRoot = fileURLToPath(new URL("../../testData/", import.meta.url));
   const readFixture = (name: string) =>
     fs.readFileSync(path.join(fixtureRoot, name), "utf8");
 
   const ccl = readFixture("CFX1.ccl");
-  const cclVariables = parseVariables(ccl, "ccl");
+  const cclVariables = parseVariables(ccl);
   const cclTarget = findVariableTarget(
     ccl,
     ccl.indexOf("Specific Heat Capacity = 4181.7"),
-    "ccl",
   );
   assert.equal(cclVariables.length, 269);
   assert.equal(cclTarget?.material, "Water");
@@ -252,7 +235,6 @@ test("parses all fixture formats in the testData folder", () => {
   const cseTarget = findVariableTarget(
     cse,
     cse.indexOf("Bound Radius"),
-    "cse",
   );
   assert.equal(cseTarget?.path[0], "PLANE: Plane 1");
 
@@ -260,7 +242,6 @@ test("parses all fixture formats in the testData folder", () => {
   const pythonTarget = findVariableTarget(
     python,
     python.indexOf("body.Material"),
-    "python",
   );
   assert.equal(pythonTarget?.variableName, "body.Material");
   assert.ok(
@@ -272,9 +253,7 @@ test("parses all fixture formats in the testData folder", () => {
   const workbench = readFixture("workbench.wbjn");
   const workbenchTarget = findVariableTarget(
     workbench,
-    workbench.indexOf("Axis 3 Point"),
-    "workbench",
+    workbench.indexOf("engineeringData1 ="),
   );
-  assert.equal(workbenchTarget?.variableName, "Axis 3 Point");
-  assert.ok(workbenchTarget?.path.includes("ccl · 内嵌 CCL"));
+  assert.equal(workbenchTarget?.variableName, "engineeringData1");
 });

@@ -29,6 +29,7 @@ import type { SourceFlavor, SourceRange } from "../lib/variables";
 
 export interface SourceEditorHandle {
   focus: () => void;
+  scrollToRange: (start: number, end: number) => void;
   selectRange: (start: number, end: number) => void;
 }
 
@@ -36,9 +37,11 @@ interface SourceEditorProps {
   value: string;
   flavor: SourceFlavor;
   highlightRanges: SourceRange[];
+  ariaLabel?: string;
   onChange: (value: string) => void;
   onSelectionChange: (range: SourceRange) => void;
   onLocateShortcut: () => void;
+  onValueDoubleClick?: (position: number) => void;
 }
 
 const setHighlightRanges = StateEffect.define<SourceRange[]>();
@@ -134,9 +137,11 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
       value,
       flavor,
       highlightRanges,
+      ariaLabel = "源文本",
       onChange,
       onSelectionChange,
       onLocateShortcut,
+      onValueDoubleClick,
     },
     forwardedRef,
   ) {
@@ -146,6 +151,7 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
     const onChangeRef = useRef(onChange);
     const onSelectionChangeRef = useRef(onSelectionChange);
     const onLocateShortcutRef = useRef(onLocateShortcut);
+    const onValueDoubleClickRef = useRef(onValueDoubleClick);
     const highlightKey = highlightRanges
       .map((range) => `${range.start}:${range.end}`)
       .join(",");
@@ -153,6 +159,7 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
     onChangeRef.current = onChange;
     onSelectionChangeRef.current = onSelectionChange;
     onLocateShortcutRef.current = onLocateShortcut;
+    onValueDoubleClickRef.current = onValueDoubleClick;
 
     useEffect(() => {
       if (!hostRef.current) return;
@@ -172,7 +179,7 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
             EditorState.tabSize.of(2),
             EditorView.lineWrapping,
             EditorView.contentAttributes.of({
-              "aria-label": "源文本",
+              "aria-label": ariaLabel,
               spellcheck: "false",
             }),
             languageCompartment.current.of(languageFor(flavor)),
@@ -180,6 +187,18 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
             oneDark,
             editorTheme,
             placeholder("在这里粘贴任意文本，然后选中想定位的内容…"),
+            EditorView.domEventHandlers({
+              dblclick(event, view) {
+                const position = view.posAtCoords({
+                  x: event.clientX,
+                  y: event.clientY,
+                });
+                if (position !== null) {
+                  onValueDoubleClickRef.current?.(position);
+                }
+                return false;
+              },
+            }),
             keymap.of([
               {
                 key: "Mod-Enter",
@@ -253,6 +272,23 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
       () => ({
         focus() {
           viewRef.current?.focus();
+        },
+        scrollToRange(start, end) {
+          const view = viewRef.current;
+          if (!view) return;
+          const from = Math.max(0, Math.min(start, view.state.doc.length));
+          const to = Math.max(from, Math.min(end, view.state.doc.length));
+          view.dispatch({
+            effects: EditorView.scrollIntoView(from, {
+              y: "center",
+            }),
+            scrollIntoView: true,
+          });
+          view.dispatch({
+            effects: EditorView.scrollIntoView(to, {
+              y: "nearest",
+            }),
+          });
         },
         selectRange(start, end) {
           const view = viewRef.current;

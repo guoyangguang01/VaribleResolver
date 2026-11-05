@@ -34,7 +34,6 @@ export interface ParsedVariable {
   material: string | null;
   section: string | null;
   contextValues: VariableContextValue[];
-  flavor: SourceFlavor;
 }
 
 interface SourceLine {
@@ -56,16 +55,9 @@ interface AssignmentParts {
   valueQuote: string | null;
 }
 
-interface PythonPathResult {
+interface IndentedPathResult {
   path: string[];
   contextValues: VariableContextValue[];
-}
-
-interface EmbeddedCclBlock {
-  name: string | null;
-  start: number;
-  end: number;
-  content: string;
 }
 
 export function sourceFlavorFromFilename(filename: string): SourceFlavor {
@@ -137,7 +129,7 @@ export function findVariableAt(
   );
 }
 
-function findOpenPythonCall(
+function findOpenCallContext(
   source: string,
   lineStart: number,
 ): string | null {
@@ -371,21 +363,19 @@ function isPythonVariableName(value: string): boolean {
 function parseName(
   lhs: string,
   lineStart: number,
-  flavor: SourceFlavor,
 ): { variableName: string; nameRange: SourceRange } | null {
   let candidate = lhs;
-  if (flavor === "python" || flavor === "workbench") {
-    const colon = findTopLevelColon(candidate);
-    if (colon >= 0) candidate = candidate.slice(0, colon);
-  }
+  const colon = findTopLevelColon(candidate);
+  if (colon >= 0) candidate = candidate.slice(0, colon);
 
   const leading = candidate.length - candidate.trimStart().length;
   const variableName = candidate.trim();
   if (!variableName) return null;
 
-  if (flavor === "python" || flavor === "workbench") {
-    if (!isPythonVariableName(variableName)) return null;
-  } else if (/[=<>{}()[\],"']/.test(variableName)) {
+  if (
+    !isPythonVariableName(variableName) &&
+    /[=<>{}()[\],"']/.test(variableName)
+  ) {
     return null;
   }
 
@@ -489,15 +479,13 @@ function parseTrailingUnit(
 }
 
 function parseAssignmentSyntax(
-  source: string,
   line: SourceLine,
-  flavor: SourceFlavor,
 ): AssignmentParts | null {
   const equalIndex = findAssignmentEqual(line.text);
   if (equalIndex < 0) return null;
 
   const lhs = line.text.slice(0, equalIndex);
-  const name = parseName(lhs, line.start, flavor);
+  const name = parseName(lhs, line.start);
   if (!name) return null;
 
   const afterEqual = line.text.slice(equalIndex + 1);
@@ -509,10 +497,7 @@ function parseAssignmentSyntax(
   if (!rawValue) return null;
   const rawStart = line.start + equalIndex + 1 + leading;
 
-  const stringLiteral =
-    flavor === "python" || flavor === "workbench"
-      ? parseStringLiteral(rawValue, rawStart)
-      : null;
+  const stringLiteral = parseStringLiteral(rawValue, rawStart);
   if (stringLiteral) {
     return {
       indentation: lhs.slice(0, lhs.search(/\S|$/)),
@@ -583,12 +568,12 @@ function collectBlockPath(
   return path;
 }
 
-function collectPythonPath(
+function collectIndentedContext(
   source: string,
   lines: SourceLine[],
   lineIndex: number,
   assignmentIndentation: string,
-): PythonPathResult {
+): IndentedPathResult {
   const path: string[] = [];
   let parentIndent = indentationWidth(assignmentIndentation);
   const blockHeader =
@@ -612,7 +597,7 @@ function collectPythonPath(
   );
   const scanStart = Math.max(0, lineIndex - 200);
   for (let index = lineIndex - 1; index >= scanStart; index -= 1) {
-    const anchor = parseAssignmentSyntax(source, lines[index], "python");
+    const anchor = parseAssignmentSyntax(lines[index]);
     if (!anchor || !referencedNames.has(anchor.variableName)) continue;
 
     const anchorText = `${anchor.variableName} = ${anchor.value}${
@@ -641,7 +626,6 @@ function finishVariable(
   assignment: AssignmentParts,
   path: string[],
   contextValues: VariableContextValue[],
-  flavor: SourceFlavor,
 ): ParsedVariable {
   const materialEntry = path.find((entry) => /^MATERIAL\s*:/i.test(entry));
   return {
@@ -669,49 +653,48 @@ function finishVariable(
             !/^(?:LIBRARY|MATERIAL\b|PROPERTIES\b)/i.test(entry),
         ) ?? null,
     contextValues,
-    flavor,
   };
 }
 
-function parseBlockVariables(
-  source: string,
-  flavor: "ccl" | "cse" | "generic",
-): ParsedVariable[] {
-  const variables: ParsedVariable[] = [];
-  for (const line of splitLines(source)) {
-    const assignment = parseAssignmentSyntax(source, line, flavor);
-    if (!assignment) continue;
-    const path = collectBlockPath(
-      source,
-      line.start,
-      assignment.indentation,
-    );
-    variables.push(
-      finishVariable(source, line, assignment, path, [], flavor),
-    );
+function multilineStringRanges(source: string): SourceRange[] {
+  const ranges: SourceRange[] = [];
+  const pattern = /(["']{3})[\s\S]*?\1/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(source)) !== null) {
+    ranges.push({
+      start: match.index + match[1].length,
+      end: match.index + match[0].length - match[1].length,
+    });
   }
-  return variables;
+  return ranges;
 }
 
-function parsePythonVariables(
-  source: string,
-  flavor: "python" | "workbench",
-  excludedRanges: SourceRange[] = [],
-): ParsedVariable[] {
+function mergeContextPath(
+  indentedPath: string[],
+  blockPath: string[],
+): string[] {
+  return [
+    ...indentedPath,
+    ...blockPath.filter((entry) => !indentedPath.includes(entry)),
+  ];
+}
+
+export function parseVariables(source: string): ParsedVariable[] {
   const variables: ParsedVariable[] = [];
   const lines = splitLines(source);
+  const multilineRanges = multilineStringRanges(source);
 
   lines.forEach((line, lineIndex) => {
     if (
-      excludedRanges.some(
-        (range) => line.start <= range.end && line.end >= range.start,
+      multilineRanges.some(
+        (range) => line.start > range.start && line.start < range.end,
       )
     ) {
       return;
     }
-    const assignment = parseAssignmentSyntax(source, line, flavor);
+    const assignment = parseAssignmentSyntax(line);
     if (!assignment) return;
-    const callContext = findOpenPythonCall(source, line.start);
+    const callContext = findOpenCallContext(source, line.start);
     if (callContext) {
       const contextualAssignment = assignment.rawValue.endsWith(",")
         ? (() => {
@@ -741,15 +724,20 @@ function parsePythonVariables(
           contextualAssignment,
           [callContext],
           [],
-          flavor,
         ),
       );
       return;
     }
-    const context = collectPythonPath(
+
+    const indentedContext = collectIndentedContext(
       source,
       lines,
       lineIndex,
+      assignment.indentation,
+    );
+    const blockPath = collectBlockPath(
+      source,
+      line.start,
       assignment.indentation,
     );
     variables.push(
@@ -757,9 +745,8 @@ function parsePythonVariables(
         source,
         line,
         assignment,
-        context.path,
-        context.contextValues,
-        flavor,
+        mergeContextPath(indentedContext.path, blockPath),
+        indentedContext.contextValues,
       ),
     );
   });
@@ -767,95 +754,11 @@ function parsePythonVariables(
   return variables;
 }
 
-function findEmbeddedCclBlocks(source: string): EmbeddedCclBlock[] {
-  const blocks: EmbeddedCclBlock[] = [];
-  const tripleQuoted = /(["']{3})([\s\S]*?)\1/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = tripleQuoted.exec(source)) !== null) {
-    if (
-      !/^\s*(?:LIBRARY|MATERIAL|PROPERTIES|DOMAIN|PLANE|BOUNDARY|COMMAND FILE)\s*:/im.test(
-        match[2],
-      )
-    ) {
-      continue;
-    }
-    const start = match.index + match[1].length;
-    const end = start + match[2].length;
-    const lineStart = source.lastIndexOf("\n", Math.max(0, match.index - 1)) + 1;
-    const prefix = source.slice(lineStart, match.index);
-    const nameMatch = /([A-Za-z_]\w*)\s*=\s*(?:[rubf])?\s*$/i.exec(prefix);
-    blocks.push({
-      name: nameMatch?.[1] ?? null,
-      start,
-      end,
-      content: match[2],
-    });
-  }
-
-  return blocks;
-}
-
-function shiftVariable(
-  source: string,
-  variable: ParsedVariable,
-  offset: number,
-  pathPrefix: string,
-): ParsedVariable {
-  const shiftRange = (range: SourceRange): SourceRange => ({
-    start: range.start + offset,
-    end: range.end + offset,
-  });
-  return {
-    ...variable,
-    line: lineNumberAt(source, variable.lineStart + offset),
-    lineStart: variable.lineStart + offset,
-    lineEnd: variable.lineEnd + offset,
-    nameRange: shiftRange(variable.nameRange),
-    valueRange: shiftRange(variable.valueRange),
-    unitRange: variable.unitRange ? shiftRange(variable.unitRange) : null,
-    path: [pathPrefix, ...variable.path],
-    contextValues: variable.contextValues.map((context) => ({
-      ...context,
-      line: lineNumberAt(source, context.valueRange.start + offset),
-      valueRange: shiftRange(context.valueRange),
-    })),
-  };
-}
-
-function parseWorkbenchVariables(source: string): ParsedVariable[] {
-  const blocks = findEmbeddedCclBlocks(source);
-  const embedded = blocks.flatMap((block) => {
-    const prefix = block.name ? `${block.name} · 内嵌 CCL` : "内嵌 CCL";
-    return parseBlockVariables(block.content, "ccl").map((variable) =>
-      shiftVariable(source, variable, block.start, prefix),
-    );
-  });
-  const python = parsePythonVariables(
-    source,
-    "workbench",
-    blocks.map((block) => ({ start: block.start, end: block.end })),
-  );
-  return [...python, ...embedded].sort(
-    (first, second) => first.lineStart - second.lineStart,
-  );
-}
-
-export function parseVariables(
-  source: string,
-  flavor: SourceFlavor,
-): ParsedVariable[] {
-  if (flavor === "python") return parsePythonVariables(source, "python");
-  if (flavor === "workbench") return parseWorkbenchVariables(source);
-  return parseBlockVariables(source, flavor);
-}
-
 export function findVariableTarget(
   source: string,
   index: number,
-  flavor: SourceFlavor,
 ): ParsedVariable | null {
-  const variables = parseVariables(source, flavor);
+  const variables = parseVariables(source);
   const bounds = lineBoundsAt(source, index);
   return (
     variables.find(
