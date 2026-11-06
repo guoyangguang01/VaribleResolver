@@ -1,0 +1,2579 @@
+:root {
+  color-scheme: light;
+  --app-bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-subtle: #f7f8fa;
+  --surface-raised: #ffffff;
+  --surface-hover: #eef2f7;
+  --surface-active: #e7edf6;
+  --border: #dfe3e8;
+  --border-strong: #cbd2dc;
+  --text: #202833;
+  --text-secondary: #5f6b7a;
+  --text-muted: #697586;
+  --accent: #4f6b91;
+  --accent-strong: #345277;
+  --accent-soft: #e8eef6;
+  --success: #2d7d5c;
+  --success-soft: #e8f5ef;
+  --warning: #9a6a1e;
+  --warning-soft: #fbf2df;
+  --danger: #b34a52;
+  --danger-soft: #fbeaec;
+  --code-bg: #fbfcfe;
+  --shadow: 0 12px 36px rgba(36, 46, 60, 0.14);
+  --font-ui:
+    "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI",
+    "Microsoft YaHei", sans-serif;
+  --font-mono:
+    "Cascadia Code", "Cascadia Mono", Consolas, "Microsoft YaHei UI",
+    monospace;
+  --mono: var(--font-mono);
+  --paper: var(--app-bg);
+  --paper-deep: var(--surface-subtle);
+  --ink: var(--text);
+  --muted: var(--text-muted);
+  --line: var(--border);
+  --green: var(--accent);
+  --green-bright: #d8e7fb;
+  --green-deep: var(--accent-strong);
+  --orange: var(--warning);
+  --white: var(--surface);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app-bg: #14171c;
+  --surface: #1b1f26;
+  --surface-subtle: #171b21;
+  --surface-raised: #222730;
+  --surface-hover: #242a33;
+  --surface-active: #29364a;
+  --border: #2c333d;
+  --border-strong: #3b4552;
+  --text: #e8ecf2;
+  --text-secondary: #b7c0cc;
+  --text-muted: #9aa4b2;
+  --accent: #8faed8;
+  --accent-strong: #b1c8e6;
+  --accent-soft: #263a52;
+  --success: #6fc69d;
+  --success-soft: #18352b;
+  --warning: #e0b563;
+  --warning-soft: #3b2e18;
+  --danger: #e38b92;
+  --danger-soft: #3d2024;
+  --code-bg: #14191f;
+  --shadow: 0 16px 42px rgba(0, 0, 0, 0.42);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  border: 0;
+}
+
+button:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="separator"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.program-runner.ps-app {
+  --explorer-width: 232px;
+  --inspector-width: 320px;
+  --dock-height: 260px;
+  --dock-resizer-height: 5px;
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  margin: 0;
+  overflow: hidden;
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  animation: none;
+}
+
+.program-runner.ps-app *,
+.program-runner.ps-app *::before,
+.program-runner.ps-app *::after {
+  box-sizing: border-box;
+}
+
+.program-runner .runner-shell {
+  display: contents;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.is-resizing,
+body.is-resizing * {
+  cursor: inherit !important;
+  user-select: none !important;
+}
+
+/* Application toolbar */
+.program-runner .runner-topbar {
+  display: flex;
+  height: 50px;
+  min-height: 50px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.app-brand-block {
+  display: flex;
+  min-width: 184px;
+  align-items: center;
+  gap: 9px;
+}
+
+.app-brand-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--text);
+  color: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.app-brand-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app-brand-copy strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.app-brand-copy span {
+  color: var(--text-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.program-runner .runner-project-title {
+  display: flex;
+  min-width: 150px;
+  max-width: 380px;
+  flex: 1 1 280px;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.project-title-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.program-runner .runner-project-title > input,
+.program-runner .project-title-line > input {
+  width: 100%;
+  max-width: none;
+  height: 23px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.program-runner .project-title-line > input:hover {
+  background: var(--surface-subtle);
+}
+
+.program-runner .project-title-line > input:focus {
+  padding: 0 5px;
+  background: var(--surface-subtle);
+  outline: 1px solid var(--border-strong);
+}
+
+.dirty-indicator {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 0 3px var(--warning-soft);
+}
+
+.program-runner .runner-project-path {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-project-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.program-runner .runner-project-actions > button,
+.theme-menu > summary {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.program-runner .runner-project-actions > button:hover:not(:disabled),
+.theme-menu > summary:hover {
+  border-color: var(--border);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.program-runner .runner-project-actions > button:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.program-runner .runner-project-actions .toolbar-icon-button {
+  width: 30px;
+  padding: 0;
+}
+
+.program-runner .runner-project-actions .inspector-toggle {
+  width: auto;
+  padding: 0 8px;
+}
+
+.program-runner .runner-project-actions .toolbar-run-button {
+  min-width: 92px;
+  margin-left: 3px;
+  padding: 0 13px;
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.program-runner .runner-project-actions .toolbar-run-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.theme-menu {
+  position: relative;
+}
+
+.theme-menu > summary {
+  list-style: none;
+}
+
+.theme-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.theme-menu[open] > summary {
+  border-color: var(--border);
+  background: var(--surface-hover);
+}
+
+.theme-menu-popover {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 80;
+  display: grid;
+  width: 154px;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.theme-menu-popover button {
+  display: flex;
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.theme-menu-popover button:hover,
+.theme-menu-popover button[aria-checked="true"] {
+  background: var(--surface-active);
+  color: var(--text);
+}
+
+.theme-menu-popover button[aria-checked="true"]::after {
+  margin-left: auto;
+  color: var(--accent);
+  content: "✓";
+  font-weight: 700;
+}
+
+/* Workbench */
+.program-runner .runner-layout {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-columns:
+    var(--explorer-width) 5px minmax(0, 1fr) 5px
+    var(--inspector-width);
+  overflow: hidden;
+  background: var(--app-bg);
+}
+
+.program-runner .runner-files,
+.program-runner .runner-controls {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-files {
+  display: flex;
+  flex-direction: column;
+}
+
+.program-runner .runner-files.is-collapsed .runner-panel-heading > div,
+.program-runner .runner-files.is-collapsed .runner-load-example,
+.program-runner .runner-files.is-collapsed .runner-file-list,
+.program-runner .runner-files.is-collapsed .runner-empty-small,
+.program-runner .runner-files.is-collapsed .runner-sidebar-tabs,
+.program-runner .runner-files.is-collapsed .runner-sidebar-parameter-tree,
+.program-runner .runner-files.is-collapsed .runner-parameter-sidebar {
+  display: none;
+}
+
+.program-runner .runner-files.is-collapsed .runner-panel-heading {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+.program-runner .pane-resizer {
+  position: relative;
+  z-index: 4;
+  width: 5px;
+  cursor: col-resize;
+  background: var(--app-bg);
+}
+
+.program-runner .pane-resizer::after {
+  position: absolute;
+  inset: 0 2px;
+  background: transparent;
+  content: "";
+  transition: background 120ms ease;
+}
+
+.program-runner .pane-resizer:hover::after,
+.program-runner .pane-resizer:focus-visible::after {
+  background: var(--accent);
+}
+
+.program-runner.is-explorer-collapsed .pane-resizer-left,
+.program-runner.is-inspector-collapsed .pane-resizer-right {
+  display: none;
+}
+
+.program-runner .runner-panel-heading {
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 7px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-panel-heading > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.program-runner .runner-panel-heading span,
+.program-runner .runner-locator-heading span,
+.program-runner .runner-parameter-title > span,
+.program-runner .runner-command-heading span,
+.program-runner .runner-editor-heading > div span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+
+.program-runner .runner-panel-heading strong,
+.program-runner .runner-locator-heading strong,
+.program-runner .runner-parameter-title strong,
+.program-runner .runner-command-heading strong,
+.program-runner .runner-editor-heading strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 620;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-icon-button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.program-runner .runner-icon-button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.program-runner .file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.program-runner .runner-load-example {
+  display: flex;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.program-runner .runner-load-example:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.program-runner .runner-sidebar-tabs {
+  display: flex;
+  height: 32px;
+  min-height: 32px;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.program-runner .runner-sidebar-tabs button {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.program-runner .runner-sidebar-tabs button::after {
+  position: absolute;
+  right: 7px;
+  bottom: -1px;
+  left: 7px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.program-runner .runner-sidebar-tabs button:hover,
+.program-runner .runner-sidebar-tabs button.is-active {
+  color: var(--text);
+}
+
+.program-runner .runner-sidebar-tabs button.is-active::after {
+  background: var(--accent);
+}
+
+.program-runner .runner-sidebar-tabs small {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.program-runner .runner-sidebar-parameter-tree {
+  padding: 5px 6px 10px;
+}
+
+.program-runner .runner-parameter-sidebar {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.program-runner .runner-parameter-sidebar-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px;
+  gap: 5px;
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.program-runner .runner-parameter-sidebar-tools input,
+.program-runner .runner-parameter-sidebar-tools select {
+  width: 100%;
+  min-width: 0;
+  height: 27px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.program-runner .runner-parameter-sidebar-tools input:focus,
+.program-runner .runner-parameter-sidebar-tools select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  outline: 0;
+}
+
+.program-runner .runner-file-list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  padding: 3px 6px 8px;
+}
+
+.program-runner .runner-empty-small {
+  margin: 8px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.program-runner .runner-file-item {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.program-runner .runner-file-item:hover {
+  background: var(--surface-hover);
+}
+
+.program-runner .runner-file-item.is-active {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  background: var(--surface-active);
+}
+
+.program-runner .runner-file-select {
+  display: grid;
+  min-width: 0;
+  min-height: 44px;
+  flex: 1;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  gap: 0 7px;
+  padding: 5px 4px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.program-runner .runner-file-select > span {
+  display: grid;
+  width: 28px;
+  height: 24px;
+  grid-row: 1 / 3;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.program-runner .runner-file-select strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 550;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-file-select small {
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 12px;
+}
+
+.program-runner .runner-file-actions {
+  display: none;
+  align-items: center;
+  gap: 1px;
+  padding-right: 4px;
+}
+
+.program-runner .runner-file-item:hover .runner-file-actions,
+.program-runner .runner-file-item.is-active .runner-file-actions {
+  display: flex;
+}
+
+.program-runner .runner-file-actions button {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.program-runner .runner-file-actions button:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Source editor */
+.program-runner .runner-editor-panel {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 42px auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.program-runner .runner-editor-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-editor-heading > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.program-runner .runner-editor-heading > div span {
+  flex: 0 0 auto;
+}
+
+.program-runner .runner-editor-heading > div strong {
+  max-width: min(62vw, 760px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.program-runner .runner-selection-count {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.program-runner .runner-file-path-field {
+  display: flex;
+  height: 31px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.program-runner .runner-file-path-field span {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.program-runner .runner-file-path-field input {
+  height: 22px;
+  min-width: 0;
+  flex: 1;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.program-runner .runner-file-path-field input:hover,
+.program-runner .runner-file-path-field input:focus {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-editor-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  background: var(--code-bg);
+}
+
+.program-runner .codemirror-host,
+.program-runner .cm-editor {
+  width: 100%;
+  height: 100%;
+}
+
+.program-runner .cm-editor.cm-focused {
+  outline: 0;
+}
+
+.program-runner .runner-editor-empty {
+  display: flex;
+  height: 100%;
+  min-height: 200px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px;
+  background:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px),
+    var(--code-bg);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+  text-align: center;
+}
+
+.program-runner .runner-editor-empty .empty-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 2px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(46, 60, 80, 0.06);
+}
+
+.program-runner .runner-editor-empty .empty-mark svg {
+  width: 21px;
+  height: 21px;
+}
+
+.program-runner .runner-editor-empty strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 620;
+}
+
+.program-runner .runner-editor-empty p {
+  max-width: 390px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.empty-actions button {
+  display: inline-flex;
+  height: 31px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.empty-actions button:first-child {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #ffffff;
+}
+
+.empty-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.empty-actions button:first-child:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.program-runner .runner-selection-bar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px 6px 13px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-selection-bar > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.program-runner .runner-selection-bar > div:first-child span {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.program-runner .runner-selection-bar > div:first-child strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-selection-bar > small {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-binding-context-hint {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.editor-context-menu {
+  position: fixed;
+  z-index: 120;
+  display: grid;
+  width: 220px;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.editor-context-menu-selection {
+  display: grid;
+  gap: 2px;
+  padding: 5px 7px 7px;
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-context-menu-selection span {
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.editor-context-menu-selection strong {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-context-menu > button {
+  display: flex;
+  height: 31px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-align: left;
+}
+
+.editor-context-menu > button:hover:not(:disabled),
+.editor-context-menu > button:focus-visible {
+  background: var(--surface-active);
+  color: var(--text);
+}
+
+.editor-context-menu-mark {
+  display: inline-grid;
+  width: 26px;
+  height: 16px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-family: var(--font-mono);
+  font-size: 6px;
+  font-weight: 700;
+}
+
+.editor-context-menu-mark.is-output {
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--border));
+  color: var(--warning);
+}
+
+/* Inspector */
+.program-runner .runner-controls {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-controls.is-collapsed {
+  display: none;
+}
+
+.program-runner .runner-controls > .runner-panel-heading {
+  margin: 0;
+}
+
+.program-runner .runner-inspector-tabs {
+  display: flex;
+  height: 33px;
+  min-height: 33px;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.program-runner .runner-inspector-tabs button {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  padding: 0 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.program-runner .runner-inspector-tabs button::after {
+  position: absolute;
+  right: 6px;
+  bottom: -1px;
+  left: 6px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.program-runner .runner-inspector-tabs button:hover,
+.program-runner .runner-inspector-tabs button.is-active {
+  color: var(--text);
+}
+
+.program-runner .runner-inspector-tabs button.is-active::after {
+  background: var(--accent);
+}
+
+.program-runner .runner-inspector-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.program-runner .runner-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0 0 10px;
+}
+
+.program-runner .runner-field > span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.program-runner .runner-field > small {
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.program-runner .runner-field input,
+.program-runner .runner-field textarea,
+.program-runner .runner-field select,
+.program-runner .runner-parameter-filters select,
+.program-runner .runner-parameter-filters input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.program-runner .runner-field input,
+.program-runner .runner-field select,
+.program-runner .runner-parameter-filters select,
+.program-runner .runner-parameter-filters input {
+  height: 30px;
+  padding: 0 8px;
+}
+
+.program-runner .runner-field textarea {
+  min-height: 66px;
+  padding: 7px 8px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.program-runner .runner-field input:hover,
+.program-runner .runner-field textarea:hover,
+.program-runner .runner-field select:hover,
+.program-runner .runner-parameter-filters input:hover,
+.program-runner .runner-parameter-filters select:hover {
+  border-color: var(--border-strong);
+}
+
+.program-runner .runner-field input:focus,
+.program-runner .runner-field textarea:focus,
+.program-runner .runner-field select:focus,
+.program-runner .runner-parameter-filters input:focus,
+.program-runner .runner-parameter-filters select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  outline: 0;
+}
+
+.program-runner .runner-locator-mode {
+  margin: 10px 12px 18px;
+  padding-right: 10px;
+  padding-bottom: 9px;
+  padding-left: 10px;
+  padding-top: 13px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.program-runner .runner-locator-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.program-runner .runner-locator-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.program-runner .runner-locator-heading small {
+  max-width: 150px;
+  color: var(--text-muted);
+  font-size: 8px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.program-runner .runner-locator-mode.is-editing {
+  margin-right: -7px;
+  margin-left: -7px;
+  padding: 11px 7px 8px;
+  border-color: var(--accent);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+}
+
+.program-runner .runner-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 8px;
+}
+
+.program-runner .runner-token-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 4px 0 10px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-token-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.program-runner .runner-token-preview-heading span,
+.program-runner .runner-token-preview > small {
+  color: var(--text-muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.program-runner .runner-token-preview-heading strong {
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+
+.program-runner .runner-mode-wide {
+  grid-column: 1 / -1;
+}
+
+.program-runner .runner-mode-hint {
+  margin: 4px 0 12px;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.program-runner .runner-locator-edit-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.program-runner .runner-locator-edit-actions button {
+  height: 29px;
+  flex: 1;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.program-runner .runner-locator-edit-actions .runner-locator-apply {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #ffffff;
+}
+
+/* Dock */
+.program-runner .dock-resizer {
+  position: relative;
+  z-index: 5;
+  height: var(--dock-resizer-height);
+  flex: 0 0 var(--dock-resizer-height);
+  cursor: row-resize;
+  background: var(--app-bg);
+}
+
+.program-runner .dock-resizer::after {
+  position: absolute;
+  inset: 1px 0;
+  background: transparent;
+  content: "";
+}
+
+.program-runner .dock-resizer:hover::after,
+.program-runner .dock-resizer:focus-visible::after {
+  background: var(--accent);
+}
+
+.program-runner .dock-tabs {
+  display: flex;
+  height: 36px;
+  min-height: 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 6px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.program-runner .dock-title {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+}
+
+.program-runner .dock-title strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.program-runner .dock-title small {
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.dock-run-state {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.dock-run-state.is-running {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  animation: run-pulse 1.4s ease-in-out infinite;
+}
+
+.program-runner .dock-tab-list {
+  display: flex;
+  height: 100%;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.program-runner .dock-tab-list button {
+  position: relative;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.program-runner .dock-tab-list button::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.program-runner .dock-tab-list button:hover,
+.program-runner .dock-tab-list button.is-active {
+  color: var(--text);
+}
+
+.program-runner .dock-tab-list button.is-active::after {
+  background: var(--accent);
+}
+
+.program-runner .dock-tab-list button > span {
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.program-runner .dock-tab-list button.is-running > span {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.program-runner .dock-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.program-runner .dock-collapse-button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  margin-left: auto;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.program-runner .dock-collapse-button:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.program-runner .runner-parameter-panel,
+.program-runner .runner-command-area {
+  height: var(--dock-height);
+  min-height: 0;
+  flex: 0 0 var(--dock-height);
+  overflow: hidden;
+  border: 0;
+  background: var(--surface);
+}
+
+.program-runner .runner-parameter-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.program-runner .runner-parameter-panel.is-panel-hidden,
+.program-runner .runner-command-area.is-panel-hidden,
+.program-runner.is-dock-collapsed .runner-parameter-panel,
+.program-runner.is-dock-collapsed .runner-command-area {
+  display: none;
+}
+
+.program-runner .runner-parameter-toolbar {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-parameter-title {
+  display: flex;
+  min-width: 205px;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.program-runner .runner-parameter-title small {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.program-runner .runner-parameter-filters {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+
+.program-runner .runner-parameter-filters select {
+  width: 105px;
+  flex: 0 0 105px;
+}
+
+.program-runner .runner-parameter-filters input {
+  max-width: 340px;
+}
+
+.program-runner .runner-main-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.program-runner .runner-main-actions button {
+  display: inline-flex;
+  height: 29px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.program-runner .runner-main-actions .runner-prepare-button {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #ffffff;
+}
+
+.program-runner .runner-main-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.program-runner .runner-main-actions .runner-prepare-button:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.program-runner .runner-parameter-workspace {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(250px, 34%) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.program-runner .runner-parameter-tree {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-parameter-tree-title {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.program-runner .runner-parameter-tree-title strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.program-runner .runner-parameter-tree-title small {
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.program-runner .runner-parameter-tree-body {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 4px 5px 10px;
+}
+
+.program-runner .runner-parameter-file-group {
+  margin-bottom: 2px;
+}
+
+.program-runner .runner-parameter-file-node,
+.program-runner .runner-parameter-direction-node,
+.program-runner .runner-binding {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.program-runner .runner-parameter-file-node {
+  min-height: 29px;
+  gap: 6px;
+  padding: 2px 7px 2px 4px;
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.program-runner .runner-parameter-file-node:hover,
+.program-runner .runner-parameter-direction-node:hover,
+.program-runner .runner-binding:hover {
+  background: var(--surface-hover);
+}
+
+.program-runner .runner-parameter-file-node > svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  color: var(--accent);
+}
+
+.program-runner .runner-parameter-file-node strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-parameter-file-node small {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 7px;
+}
+
+.tree-chevron {
+  display: inline-grid;
+  width: 12px;
+  flex: 0 0 12px;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.program-runner .runner-parameter-direction-groups {
+  position: relative;
+  margin-left: 13px;
+  padding-left: 8px;
+}
+
+.program-runner .runner-parameter-direction-groups::before {
+  position: absolute;
+  top: 2px;
+  bottom: 4px;
+  left: 0;
+  width: 1px;
+  background: var(--border);
+  content: "";
+}
+
+.program-runner .runner-parameter-direction-node {
+  min-height: 26px;
+  gap: 6px;
+  padding: 2px 6px 2px 3px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.program-runner .runner-parameter-direction-node strong {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.program-runner .runner-parameter-direction-node small {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 7px;
+}
+
+.tree-direction-mark {
+  display: inline-grid;
+  width: 25px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-family: var(--font-mono);
+  font-size: 6px;
+  font-weight: 700;
+}
+
+.runner-parameter-direction-node.is-output .tree-direction-mark {
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--border));
+  color: var(--warning);
+}
+
+.program-runner .runner-parameter-items {
+  position: relative;
+  margin-left: 13px;
+  padding-left: 8px;
+}
+
+.program-runner .runner-parameter-items::before {
+  position: absolute;
+  top: 0;
+  bottom: 2px;
+  left: 0;
+  width: 1px;
+  background: var(--border);
+  content: "";
+}
+
+.program-runner .runner-binding {
+  min-height: 25px;
+  gap: 6px;
+  padding: 2px 7px 2px 4px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+}
+
+.program-runner .runner-binding > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-binding.is-located,
+.program-runner .runner-binding.is-selected {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.program-runner .runner-binding.has-error {
+  background: var(--danger-soft);
+}
+
+.tree-parameter-glyph {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.program-runner .runner-binding.is-output .tree-parameter-glyph {
+  color: var(--warning);
+}
+
+.program-runner .runner-parameter-properties {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+.program-runner .runner-property-heading {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-property-heading > div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.program-runner .runner-property-heading span:first-child {
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.program-runner .runner-property-heading strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runner-property-direction {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.runner-property-direction.is-output {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.program-runner .runner-property-form {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px 10px;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.program-runner .runner-property-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.program-runner .runner-property-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.program-runner .runner-property-field > span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.program-runner .runner-property-field input,
+.program-runner .runner-property-field select,
+.program-runner .runner-property-field textarea,
+.program-runner .runner-binding-value {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.program-runner .runner-property-field input,
+.program-runner .runner-property-field select {
+  height: 28px;
+  padding: 0 7px;
+}
+
+.program-runner .runner-property-field textarea,
+.program-runner .runner-binding-value {
+  min-height: 42px;
+  padding: 6px 7px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.program-runner .runner-property-field input:focus,
+.program-runner .runner-property-field select:focus,
+.program-runner .runner-property-field textarea:focus,
+.program-runner .runner-binding-value:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  outline: 0;
+}
+
+.program-runner .runner-property-field input:disabled {
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+}
+
+.program-runner .runner-binding-value.is-invalid {
+  border-color: var(--danger);
+}
+
+.program-runner .runner-property-error {
+  color: var(--danger);
+  font-size: 8px;
+}
+
+.program-runner .runner-property-readonly {
+  display: flex;
+  min-height: 42px;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 6px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+.program-runner .runner-property-readonly > span {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.program-runner .runner-property-locator {
+  display: flex;
+  height: 28px;
+  align-items: center;
+  gap: 6px;
+}
+
+.program-runner .runner-property-locator-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-property-locator-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.program-runner .runner-property-locator-summary-heading .runner-binding-meta {
+  flex: 1;
+  font-size: 9px;
+}
+
+.program-runner .runner-property-locator-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 8px;
+  margin: 0;
+}
+
+.program-runner .runner-property-locator-details > div {
+  min-width: 0;
+}
+
+.program-runner .runner-property-locator-details dt {
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.program-runner .runner-property-locator-details dd {
+  overflow: hidden;
+  margin: 1px 0 0;
+  color: var(--text-secondary);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-property-locator .runner-binding-meta {
+  flex: 1;
+  font-size: 9px;
+}
+
+.program-runner .runner-property-locator button,
+.program-runner .runner-property-locator-summary button,
+.program-runner .runner-property-actions button {
+  height: 27px;
+  padding: 0 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.program-runner .runner-property-locator button:hover,
+.program-runner .runner-property-locator-summary button:hover,
+.program-runner .runner-property-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.program-runner .runner-property-actions {
+  display: flex;
+  min-height: 39px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 5px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-property-actions button.is-danger {
+  color: var(--danger);
+}
+
+.program-runner .runner-parameter-property-empty {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  gap: 4px;
+  padding: 20px;
+  text-align: center;
+}
+
+.program-runner .runner-parameter-property-empty strong {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.program-runner .runner-parameter-property-empty p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.program-runner .runner-parameter-empty {
+  display: grid;
+  min-height: 100px;
+  place-items: center;
+  margin: 0;
+  padding: 10px;
+  color: var(--text-muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+/* Run output */
+.program-runner .runner-command-area {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+}
+
+.program-runner .runner-command-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.program-runner .runner-command-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.program-runner .runner-command-heading small {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.program-runner .runner-command-area > pre {
+  min-height: 36px;
+  max-height: 74px;
+  margin: 0;
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--code-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.program-runner .runner-command-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.program-runner .runner-command-actions button {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+
+.program-runner .runner-command-actions .runner-run-button {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #ffffff;
+}
+
+.program-runner .runner-command-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.program-runner .runner-command-actions .runner-run-button:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.program-runner .runner-runtime {
+  min-height: 0;
+  flex: 1;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--success);
+  border-radius: 5px;
+  background: var(--surface-subtle);
+}
+
+.program-runner .runner-runtime.is-failed,
+.program-runner .runner-runtime.is-timeout {
+  border-left-color: var(--danger);
+}
+
+.program-runner .runner-runtime-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.program-runner .runner-runtime-heading strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.program-runner .runner-runtime-heading span {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.program-runner .runner-runtime-streams {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.program-runner .runner-runtime-streams pre {
+  max-height: 150px;
+  margin: 0;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.program-runner .runner-runtime-streams pre.is-error {
+  color: var(--danger);
+}
+
+.runner-run-empty {
+  display: flex;
+  min-height: 90px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  text-align: center;
+}
+
+.runner-run-empty > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.runner-run-empty > span.is-running {
+  background: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-soft);
+  animation: run-pulse 1.4s ease-in-out infinite;
+}
+
+.runner-run-empty strong {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.runner-run-empty p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+@keyframes run-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Status and notifications */
+.app-statusbar {
+  display: flex;
+  width: 100%;
+  height: 24px;
+  min-height: 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 9px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.status-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-weight: 550;
+}
+
+.status-mode i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.status-path {
+  max-width: 33vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-dirty {
+  color: var(--warning);
+}
+
+.program-runner .runner-notice {
+  position: fixed;
+  right: 16px;
+  bottom: 36px;
+  z-index: 90;
+  display: flex;
+  width: min(440px, calc(100vw - 32px));
+  min-height: 44px;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 8px 9px 11px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.program-runner .runner-notice.is-success {
+  border-left-color: var(--success);
+}
+
+.program-runner .runner-notice.is-error {
+  border-left-color: var(--danger);
+}
+
+.program-runner .runner-notice > span {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.program-runner .runner-notice.is-success > span {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.program-runner .runner-notice.is-error > span {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.program-runner .runner-notice p {
+  flex: 1;
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.program-runner .runner-notice > button {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.program-runner .runner-notice > button:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 20, 28, 0.38);
+  backdrop-filter: blur(2px);
+}
+
+.confirm-dialog {
+  display: grid;
+  width: min(430px, 100%);
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px 13px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.confirm-dialog-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.confirm-dialog h2 {
+  margin: 1px 0 5px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.confirm-dialog-actions button {
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.confirm-dialog-actions .is-danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .program-runner .runner-layout {
+    grid-template-columns: var(--explorer-width) 5px minmax(0, 1fr) 0 0;
+  }
+
+  .program-runner .pane-resizer-right {
+    display: none;
+  }
+
+  .program-runner .runner-controls {
+    position: fixed;
+    top: 50px;
+    right: 0;
+    bottom: calc(
+      24px + var(--dock-height) + var(--dock-resizer-height) + 36px
+    );
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    width: min(340px, calc(100vw - 72px));
+    padding: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
+    background: var(--surface-subtle);
+    box-shadow: -14px 0 36px rgba(30, 40, 54, 0.16);
+    transform: translateX(103%);
+    transition: transform 160ms ease;
+  }
+
+  .program-runner .runner-controls.is-collapsed {
+    display: none;
+  }
+
+  .program-runner.is-inspector-open .runner-controls {
+    transform: translateX(0);
+  }
+
+}
+
+@media (max-width: 1050px) {
+  .app-brand-block {
+    min-width: 146px;
+  }
+
+  .app-brand-copy span {
+    display: none;
+  }
+
+  .program-runner .runner-project-actions > button > span,
+  .theme-menu > summary > span {
+    display: none;
+  }
+
+  .program-runner .runner-project-actions .inspector-toggle {
+    width: 30px;
+    padding: 0;
+  }
+
+  .program-runner .runner-project-actions .toolbar-run-button {
+    min-width: 30px;
+  }
+
+  .program-runner .runner-project-actions .toolbar-run-button > span {
+    display: none;
+  }
+
+  .program-runner .dock-summary span:nth-child(2),
+  .program-runner .dock-summary span:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 880px) {
+  .program-runner .runner-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .program-runner .runner-files,
+  .program-runner .pane-resizer-left {
+    display: none;
+  }
+
+  .program-runner .runner-parameter-toolbar {
+    flex-wrap: wrap;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .program-runner .runner-parameter-filters {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .program-runner .runner-parameter-filters input {
+    max-width: none;
+  }
+
+  .program-runner .runner-runtime-streams {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 760px) {
+  .program-runner {
+    --dock-height: min(var(--dock-height), 220px);
+  }
+
+  .program-runner .runner-editor-empty {
+    min-height: 130px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .program-runner *,
+  .program-runner *::before,
+  .program-runner *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

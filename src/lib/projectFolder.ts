@@ -1,12 +1,14 @@
 import {
   createLaunchFile,
+  isLaunchParameterType,
   type LaunchBinding,
   type LaunchFile,
   type LaunchLocator,
 } from "./launcher.ts";
 
 export const PROJECT_SCHEMA = "program-studio-folder-project";
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 3;
+export type ProjectSchemaVersion = 2 | typeof PROJECT_VERSION;
 
 export interface ProjectFileEntry {
   path: string;
@@ -15,7 +17,7 @@ export interface ProjectFileEntry {
 
 export interface ProjectManifest {
   schema: typeof PROJECT_SCHEMA;
-  schemaVersion: typeof PROJECT_VERSION;
+  schemaVersion: ProjectSchemaVersion;
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -40,6 +42,7 @@ export interface ProjectFolderFile {
 }
 
 export interface ProjectFolderPayload {
+  folderPath?: string;
   folderName: string;
   manifest: ProjectManifest;
   launch: ProjectLaunchConfig;
@@ -96,6 +99,43 @@ const LOCATOR_KINDS = new Set<LaunchLocator["kind"]>([
   "pattern",
 ]);
 
+function normalizeRelativePath(value: string): string {
+  return value
+    .replace(/\\/g, "/")
+    .replace(/^\.\/+/, "");
+}
+
+function isAbsolutePath(value: string): boolean {
+  return /^[A-Za-z]:[\\/]/.test(value) || /^[\\/]/.test(value);
+}
+
+function joinRuntimePath(root: string, relativePath: string): string {
+  const separator = root.includes("\\") ? "\\" : "/";
+  const relative = normalizeRelativePath(relativePath)
+    .split("/")
+    .filter(Boolean)
+    .join(separator);
+  return `${root.replace(/[\\/]+$/, "")}${separator}${relative}`;
+}
+
+function replaceFilePaths(
+  value: string,
+  pathReplacements: Map<string, string>,
+): string {
+  let result = value;
+  const replacements = [...pathReplacements].sort(
+    ([left], [right]) => right.length - left.length,
+  );
+  for (const [sourcePath, runtimePath] of replacements) {
+    result = result.split(sourcePath).join(runtimePath);
+    const alternate = sourcePath.replace(/\\/g, "/");
+    if (alternate !== sourcePath) {
+      result = result.split(alternate).join(runtimePath);
+    }
+  }
+  return result;
+}
+
 function validLocator(value: unknown): value is LaunchLocator {
   return (
     isRecord(value) &&
@@ -110,13 +150,38 @@ export function serializeProjectFolder(
   const now = new Date().toISOString();
   const name = snapshot.name.trim() || "未命名工程";
   const folderName = safeFileName(name, "program-project");
+  const usedFileNames = new Set<string>();
   const files = snapshot.files.map((file, index) => ({
     path: file.path,
-    relativePath: `files/${String(index + 1).padStart(3, "0")}-${safeFileName(
-      file.name,
-      "file.txt",
-    )}`,
+    relativePath: (() => {
+      const baseName = safeFileName(file.name, `file-${index + 1}.txt`);
+      const extensionIndex = baseName.lastIndexOf(".");
+      const stem =
+        extensionIndex > 0 ? baseName.slice(0, extensionIndex) : baseName;
+      const extension =
+        extensionIndex > 0 ? baseName.slice(extensionIndex) : "";
+      let candidate = `files/${baseName}`;
+      let suffix = 2;
+      while (usedFileNames.has(candidate.toLowerCase())) {
+        candidate = `files/${stem}-${suffix}${extension}`;
+        suffix += 1;
+      }
+      usedFileNames.add(candidate.toLowerCase());
+      return candidate;
+    })(),
   }));
+  const relativePathByFilePath = new Map(
+    files.map((file) => [file.path, file.relativePath]),
+  );
+  const bindings = snapshot.bindings.map((binding) => {
+    const relativePath = relativePathByFilePath.get(binding.filePath);
+    if (!relativePath) {
+      throw new ProjectFormatError(
+        `参数“${binding.name}”引用了未封装文件：${binding.filePath}`,
+      );
+    }
+    return { ...binding, filePath: relativePath };
+  });
   const manifest: ProjectManifest = {
     schema: PROJECT_SCHEMA,
     schemaVersion: PROJECT_VERSION,
@@ -127,15 +192,24 @@ export function serializeProjectFolder(
     parameterFile: "parameters.json",
     files,
   };
+  const pathReplacements = new Map(
+    files.map((file) => [
+      file.path,
+      file.relativePath.replace(/^files\//, ""),
+    ]),
+  );
   return {
     folderName,
     manifest,
     launch: {
       program: snapshot.program,
-      arguments: snapshot.arguments,
-      workingDirectory: snapshot.workingDirectory,
+      arguments: replaceFilePaths(
+        snapshot.arguments,
+        pathReplacements,
+      ),
+      workingDirectory: "files",
     },
-    parameters: { bindings: snapshot.bindings },
+    parameters: { bindings },
     files: snapshot.files.map((file, index) => ({
       relativePath: files[index].relativePath,
       content: file.content,
@@ -156,7 +230,10 @@ export function parseProjectFolder(payload: unknown): {
   if (rawManifest.schema !== PROJECT_SCHEMA) {
     throw new ProjectFormatError("不是 Program Studio 工程目录。");
   }
-  if (rawManifest.schemaVersion !== PROJECT_VERSION) {
+  if (
+    rawManifest.schemaVersion !== 2 &&
+    rawManifest.schemaVersion !== PROJECT_VERSION
+  ) {
     throw new ProjectFormatError(
       `不支持的工程版本：${String(rawManifest.schemaVersion)}`,
     );
@@ -185,6 +262,15 @@ export function parseProjectFolder(payload: unknown): {
       ];
     }),
   );
+  const folderPath =
+    typeof payload.folderPath === "string" &&
+    payload.folderPath.trim()
+      ? payload.folderPath
+      : null;
+  const filePathByRelativePath = new Map<string, string>();
+  const filePathBySourcePath = new Map<string, string>();
+  const runtimePathBySourcePath = new Map<string, string>();
+  const runtimePathByRelativePath = new Map<string, string>();
   const files = rawManifest.files.map((entry) => {
     if (!isRecord(entry)) {
       throw new ProjectFormatError("工程文件清单条目无效。");
@@ -197,10 +283,22 @@ export function parseProjectFolder(payload: unknown): {
     if (content === undefined) {
       throw new ProjectFormatError(`工程缺少封装文件：${relativePath}`);
     }
-    return createLaunchFile(
-      requiredString(entry.path, "manifest.files.path"),
-      content,
+    const sourcePath = requiredString(
+      entry.path,
+      "manifest.files.path",
     );
+    const runtimePath = folderPath
+      ? joinRuntimePath(folderPath, relativePath)
+      : sourcePath;
+    const file = createLaunchFile(runtimePath, content);
+    runtimePathBySourcePath.set(sourcePath, runtimePath);
+    runtimePathByRelativePath.set(
+      relativePath.replace(/^files\//, ""),
+      runtimePath,
+    );
+    filePathByRelativePath.set(relativePath, file.path);
+    filePathBySourcePath.set(sourcePath, file.path);
+    return file;
   });
   const filePaths = new Set(files.map((file) => file.path));
   if (filePaths.size !== files.length) {
@@ -217,10 +315,14 @@ export function parseProjectFolder(payload: unknown): {
         `第 ${index + 1} 个参数方向无效。`,
       );
     }
-    const filePath = requiredString(
+    const storedFilePath = requiredString(
       binding.filePath,
       `parameters[${index}].filePath`,
     );
+    const filePath =
+      filePathByRelativePath.get(storedFilePath) ??
+      filePathBySourcePath.get(storedFilePath) ??
+      storedFilePath;
     if (!filePaths.has(filePath)) {
       throw new ProjectFormatError(
         `第 ${index + 1} 个参数引用了未封装文件：${filePath}`,
@@ -231,30 +333,66 @@ export function parseProjectFolder(payload: unknown): {
         `第 ${index + 1} 个参数定位模式无效。`,
       );
     }
+    const value = requiredString(
+      binding.value,
+      `parameters[${index}].value`,
+    );
+    if (!isLaunchParameterType(binding.parameterType)) {
+      throw new ProjectFormatError(
+        `第 ${index + 1} 个参数类型无效。`,
+      );
+    }
     return {
       id: requiredString(binding.id, `parameters[${index}].id`),
       name: requiredString(binding.name, `parameters[${index}].name`),
       direction,
       filePath,
       locator: binding.locator,
-      value: requiredString(binding.value, `parameters[${index}].value`),
+      value,
+      parameterType: binding.parameterType,
+      defaultValue: requiredString(
+        binding.defaultValue,
+        `parameters[${index}].defaultValue`,
+      ),
+      unit: requiredString(
+        binding.unit,
+        `parameters[${index}].unit`,
+      ),
+      description: requiredString(
+        binding.description,
+        `parameters[${index}].description`,
+      ),
     } satisfies LaunchBinding;
   });
 
   const launch: ProjectLaunchConfig = {
     program: requiredString(payload.launch.program, "launch.program"),
-    arguments: requiredString(
-      payload.launch.arguments,
-      "launch.arguments",
+    arguments: replaceFilePaths(
+      requiredString(
+        payload.launch.arguments,
+        "launch.arguments",
+      ),
+      new Map([
+        ...runtimePathBySourcePath,
+        ...runtimePathByRelativePath,
+      ]),
     ),
-    workingDirectory: requiredString(
-      payload.launch.workingDirectory,
-      "launch.workingDirectory",
-    ),
+    workingDirectory: (() => {
+      const stored = requiredString(
+        payload.launch.workingDirectory,
+        "launch.workingDirectory",
+      );
+      return folderPath && !isAbsolutePath(stored)
+        ? joinRuntimePath(folderPath, stored)
+        : stored;
+    })(),
   };
   const manifest: ProjectManifest = {
     schema: PROJECT_SCHEMA,
-    schemaVersion: PROJECT_VERSION,
+    schemaVersion:
+      rawManifest.schemaVersion === 2
+        ? 2
+        : PROJECT_VERSION,
     name: requiredString(rawManifest.name, "manifest.name"),
     createdAt: requiredString(rawManifest.createdAt, "manifest.createdAt"),
     updatedAt: requiredString(rawManifest.updatedAt, "manifest.updatedAt"),

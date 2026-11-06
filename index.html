@@ -7,7 +7,24 @@
       name="description"
       content="Program Studio 桌面客户端：管理程序输入输出、文件路径、参数定位和运行结果。"
     />
-    <meta name="theme-color" content="#f2efe6" />
+    <meta name="theme-color" content="#f3f5f7" />
+    <script>
+      (() => {
+        try {
+          const preference = localStorage.getItem("program-studio-theme");
+          const theme =
+            preference === "dark" || preference === "light"
+              ? preference
+              : matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
     <title>Program Studio · 程序运行工作台</title>
   </head>
   <body>

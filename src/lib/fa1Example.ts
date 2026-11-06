@@ -14,6 +14,7 @@ import {
   createLocatorForMode,
   type LaunchBinding,
   type LaunchFile,
+  type LaunchParameterType,
 } from "./launcher.ts";
 import { normalizeSourceText } from "./variables.ts";
 
@@ -69,6 +70,17 @@ const ASSETS: Record<string, string> = {
   "fa1-example/ResultManifest.txt": manifestSource,
 };
 
+function fa1ParameterType(dataType: number): LaunchParameterType {
+  if (dataType === 1) return "number";
+  if (dataType === 2) return "boolean";
+  if (dataType === 3) return "path";
+  return "text";
+}
+
+function fa1Unit(value: string): string {
+  return value.trim().match(/\[([^\]]+)\]\s*$/)?.[1] ?? "";
+}
+
 export function buildFa1Example(): Fa1Example {
   const config = exampleConfig as ExampleExecutionConfig;
   const fa1Config = JSON.parse(fa1ConfigSource) as Fa1Config;
@@ -100,30 +112,40 @@ export function buildFa1Example(): Fa1Example {
       const file = filesByPath.get("C:\\Cases\\fa1\\ResultManifest.txt");
       if (!file) throw new Error("示例自由参数清单不存在。");
       freeParameterIndex += 1;
-      return createBindingFromLocator(
-        file,
-        createLocatorForMode("delimited", {
-          startRowIndex: freeParameterIndex,
-          separator: " = ",
-          fieldIndex: 1,
-        }),
-        direction,
-        `fa1-${direction}-${index}`,
-        name,
-      );
+      return {
+        ...createBindingFromLocator(
+          file,
+          createLocatorForMode("delimited", {
+            startRowIndex: freeParameterIndex,
+            separator: " = ",
+            fieldIndex: 1,
+          }),
+          direction,
+          `fa1-${direction}-${index}`,
+          name,
+        ),
+        parameterType: fa1ParameterType(parameter.dataType),
+        defaultValue: parameter.defaultText,
+        unit: fa1Unit(parameter.unit),
+      };
     }
     const filePath = modulePaths[parameter.moduleName];
     const file = filePath ? filesByPath.get(filePath) : null;
     if (!file) {
       throw new Error(`示例参数模块没有文件映射：${parameter.moduleName}`);
     }
-    return createBindingFromRowColumn(
-      file,
-      parameter,
-      direction,
-      `fa1-${direction}-${index}`,
-      name,
-    );
+    return {
+      ...createBindingFromRowColumn(
+        file,
+        parameter,
+        direction,
+        `fa1-${direction}-${index}`,
+        name,
+      ),
+      parameterType: fa1ParameterType(parameter.dataType),
+      defaultValue: parameter.defaultText,
+      unit: fa1Unit(parameter.unit),
+    };
   });
 
   return {

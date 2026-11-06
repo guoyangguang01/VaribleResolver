@@ -27,6 +27,10 @@ interface ProgramStudioApi {
   ) => Promise<string[]>;
   saveProject: (
     payload: unknown,
+    options?: {
+      mode?: "save" | "saveAs";
+      path?: string;
+    },
   ) => Promise<{ path: string; name: string } | null>;
   openProject: () => Promise<unknown | null>;
   runProgram: (request: {
@@ -35,6 +39,8 @@ interface ProgramStudioApi {
     cwd?: string;
     timeoutMs?: number;
   }) => Promise<DesktopRunResult>;
+  setDirty: (dirty: boolean) => void;
+  setTheme: (preference: "system" | "light" | "dark") => void;
 }
 
 interface Window {

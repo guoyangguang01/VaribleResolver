@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "fa1 标准执行示例",
   "referenceConfig": "fa1.config",
   "parameterSource": "fa1.config",

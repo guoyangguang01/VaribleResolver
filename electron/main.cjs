@@ -1,4 +1,10 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  nativeTheme,
+} = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
@@ -8,6 +14,13 @@ const MAX_OUTPUT_BYTES = 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 
 let mainWindow = null;
+let hasUnsavedChanges = false;
+let forceClose = false;
+let closePromptOpen = false;
+
+function windowBackgroundColor() {
+  return nativeTheme.shouldUseDarkColors ? "#14171c" : "#f3f5f7";
+}
 
 async function readTextFile(filePath) {
   if (typeof filePath !== "string" || !filePath.trim()) {
@@ -33,13 +46,16 @@ async function readTextFile(filePath) {
 }
 
 function createWindow() {
+  hasUnsavedChanges = false;
+  forceClose = false;
+  closePromptOpen = false;
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 940,
     minWidth: 980,
     minHeight: 680,
     show: false,
-    backgroundColor: "#f2efe6",
+    backgroundColor: windowBackgroundColor(),
     title: "Program Studio",
     autoHideMenuBar: true,
     webPreferences: {
@@ -63,10 +79,50 @@ function createWindow() {
     mainWindow.focus();
   });
 
+  mainWindow.on("close", async (event) => {
+    if (!hasUnsavedChanges || forceClose) return;
+    event.preventDefault();
+    if (closePromptOpen) return;
+    closePromptOpen = true;
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "未保存的更改",
+      message: "当前工程包含未保存的更改。",
+      detail: "关闭客户端将丢失这些更改。",
+      buttons: ["返回应用", "放弃更改并退出"],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+    closePromptOpen = false;
+    if (result.response === 1 && mainWindow && !mainWindow.isDestroyed()) {
+      forceClose = true;
+      mainWindow.close();
+    }
+  });
+
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
+
+ipcMain.on("client:set-dirty", (_event, dirty) => {
+  hasUnsavedChanges = Boolean(dirty);
+});
+
+ipcMain.on("client:set-theme", (_event, preference) => {
+  if (
+    preference !== "system" &&
+    preference !== "light" &&
+    preference !== "dark"
+  ) {
+    return;
+  }
+  nativeTheme.themeSource = preference;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setBackgroundColor(windowBackgroundColor());
+  }
+});
 
 ipcMain.handle("client:select-files", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -101,7 +157,7 @@ ipcMain.handle("client:write-files", async (_event, files) => {
   return written;
 });
 
-ipcMain.handle("client:save-project", async (_event, payload) => {
+ipcMain.handle("client:save-project", async (_event, payload, options) => {
   if (
     !payload ||
     typeof payload.folderName !== "string" ||
@@ -112,33 +168,57 @@ ipcMain.handle("client:save-project", async (_event, payload) => {
   ) {
     throw new Error("工程目录数据无效。");
   }
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: "选择工程保存位置",
-    buttonLabel: "保存到此目录",
-    properties: ["openDirectory", "createDirectory"],
-  });
-  if (result.canceled || !result.filePaths[0]) return null;
-
   const safeFolderName = payload.folderName
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
     .replace(/[. ]+$/g, "")
     .trim();
   if (!safeFolderName) throw new Error("工程目录名称无效。");
-  const parentDirectory = path.resolve(result.filePaths[0]);
-  const projectDirectory = path.join(parentDirectory, safeFolderName);
-  try {
-    await fs.access(projectDirectory);
-    throw new Error(`工程目录已存在：${projectDirectory}`);
-  } catch (error) {
+
+  const mode = options?.mode === "save" ? "save" : "saveAs";
+  let projectDirectory;
+  if (mode === "save") {
+    if (typeof options.path !== "string" || !options.path.trim()) {
+      throw new Error("原位保存需要有效的工程目录路径。");
+    }
+    projectDirectory = path.resolve(options.path);
+    let existingManifest;
+    try {
+      existingManifest = JSON.parse(
+        await fs.readFile(path.join(projectDirectory, "project.json"), "utf8"),
+      );
+    } catch {
+      throw new Error(`不是有效的 Program Studio 工程目录：${projectDirectory}`);
+    }
     if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "ENOENT"
+      existingManifest?.schema !== "program-studio-folder-project" ||
+      ![2, 3].includes(existingManifest?.schemaVersion)
     ) {
-      // Directory does not exist, which is the expected state.
-    } else {
-      throw error;
+      throw new Error(`工程版本不受支持：${projectDirectory}`);
+    }
+  } else {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: "选择工程保存位置",
+      buttonLabel: "保存到此目录",
+      properties: ["openDirectory", "createDirectory"],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+
+    const parentDirectory = path.resolve(result.filePaths[0]);
+    projectDirectory = path.join(parentDirectory, safeFolderName);
+    try {
+      await fs.access(projectDirectory);
+      throw new Error(`工程目录已存在：${projectDirectory}`);
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        // Directory does not exist, which is the expected state.
+      } else {
+        throw error;
+      }
     }
   }
 

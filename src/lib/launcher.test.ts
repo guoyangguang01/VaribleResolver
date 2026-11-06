@@ -2,14 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildLaunchCommand,
+  createAutoPositionLocator,
   createBindingFromLocator,
   createBindingFromRowColumn,
   createBindingFromSelection,
   createLaunchFile,
   createLocatorForMode,
   extractOutputBindings,
+  inferParameterType,
   parseCommandArguments,
   resolveLaunchBinding,
+  tokenizeSpecialCharacters,
+  validateParameterValue,
   writeInputBindings,
   type LaunchBinding,
 } from "./launcher.ts";
@@ -71,6 +75,89 @@ END
       result.bindings[0].locator,
     ).value,
     "4500",
+  );
+});
+
+test("tokenizes a line only by whitespace, punctuation, and symbols", () => {
+  assert.deepEqual(
+    tokenizeSpecialCharacters("期限30日，金额10000元。"),
+    [
+      { index: 0, startCol: 0, endCol: 5 },
+      { index: 1, startCol: 5, endCol: 6 },
+      { index: 2, startCol: 6, endCol: 14 },
+      { index: 3, startCol: 14, endCol: 15 },
+    ],
+  );
+});
+
+test("keeps an automatic token selection accurate when its value grows", () => {
+  const sourceFile = file("term.txt", "期限30日，金额10000元。");
+  const binding = selectedBinding(sourceFile, "30", "output");
+  assert.equal(binding.locator.kind, "autoPosition");
+  if (binding.locator.kind !== "autoPosition") {
+    assert.fail("expected autoPosition locator");
+  }
+  assert.deepEqual(binding.locator.tokenRange, {
+    tokenCount: 4,
+    startTokenIndex: 0,
+    startOffsetFromTokenStart: 2,
+    endTokenIndex: 0,
+    endOffsetFromTokenEnd: 1,
+  });
+
+  const updatedFile = {
+    ...sourceFile,
+    content: "期限300日，金额10000元。",
+  };
+  const [output] = extractOutputBindings([updatedFile], [binding]);
+  assert.equal(output.value, "300");
+  assert.equal(output.error, null);
+});
+
+test("recomputes multiple token-relative parameters after earlier values change", () => {
+  const sourceFile = file("terms.txt", "期限30日，金额10000元。");
+  const term = selectedBinding(sourceFile, "30", "output");
+  const amount = selectedBinding(sourceFile, "10000", "output");
+  const updatedFile = {
+    ...sourceFile,
+    content: "期限300日，金额20000元。",
+  };
+  const outputs = extractOutputBindings([updatedFile], [term, amount]);
+
+  assert.deepEqual(
+    outputs.map((output) => output.value),
+    ["300", "20000"],
+  );
+  assert.deepEqual(
+    outputs.map((output) => output.error),
+    [null, null],
+  );
+});
+
+test("rejects a token-relative automatic locator after the token count changes", () => {
+  const sourceFile = file("terms.txt", "期限30日，金额10000元。");
+  const binding = selectedBinding(sourceFile, "30", "output");
+  const updatedFile = {
+    ...sourceFile,
+    content: "期限3-0日，金额10000元。",
+  };
+  const [output] = extractOutputBindings([updatedFile], [binding]);
+
+  assert.equal(output.value, null);
+  assert.match(output.error ?? "", /Token 数量发生变化/);
+});
+
+test("keeps cross-line automatic selections on the legacy fixed range", () => {
+  const sourceFile = file("multi.txt", "first\nsecond");
+  const locator = createAutoPositionLocator(sourceFile, {
+    start: sourceFile.content.indexOf("first"),
+    end: sourceFile.content.indexOf("second") + "second".length,
+  });
+
+  assert.equal(locator.tokenRange, undefined);
+  assert.equal(
+    resolveLaunchBinding(sourceFile.content, locator).value,
+    "first\nsecond",
   );
 });
 
@@ -316,7 +403,7 @@ test("writes the exact selected coordinate range without text escaping", () => {
   assert.equal(
     resolveLaunchBinding(
       result.source,
-      binding.locator,
+      result.bindings[0].locator,
     ).value,
     'steel "A"',
   );
@@ -419,6 +506,10 @@ test("reports an invalid row instead of guessing another location", () => {
       endColumnIndex: 1,
     },
     value: "1",
+    parameterType: "number",
+    defaultValue: "1",
+    unit: "",
+    description: "",
   };
   const [output] = extractOutputBindings([sourceFile], [binding]);
 
@@ -459,4 +550,29 @@ test("reports an unclosed argument quote", () => {
     () => parseCommandArguments('--name "unfinished'),
     /未闭合/,
   );
+});
+
+test("infers and validates parameter types before writing inputs", () => {
+  assert.equal(inferParameterType("12.5e-3"), "number");
+  assert.equal(inferParameterType("False"), "boolean");
+  assert.equal(inferParameterType("C:\\Cases\\input.txt"), "text");
+  assert.equal(validateParameterValue("number", "1.25e+08"), null);
+  assert.match(
+    validateParameterValue("number", "not a number") ?? "",
+    /有效数值/,
+  );
+  assert.match(
+    validateParameterValue("boolean", "yes") ?? "",
+    /true 或 false/,
+  );
+
+  const sourceFile = file("typed.txt", "VALUE = 12.5\n");
+  const binding = {
+    ...selectedBinding(sourceFile, "12.5", "input"),
+    value: "invalid",
+  };
+  const result = writeInputBindings(sourceFile.content, [binding]);
+
+  assert.equal(result.writtenBindingIds.length, 0);
+  assert.match(result.errors[0]?.message ?? "", /有效数值/);
 });

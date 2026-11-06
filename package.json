@@ -15,7 +15,8 @@
     "build:web": "tsc --noEmit && vite build",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/variables.test.ts src/lib/launcher.test.ts src/lib/projectFolder.test.ts",
+    "project:run": "node scripts/run-project.ts",
+    "test": "node --test src/lib/variables.test.ts src/lib/launcher.test.ts src/lib/projectFolder.test.ts src/lib/projectExecution.test.ts src/lib/runRequest.test.ts src/lib/localExecutionAdapter.test.ts src/lib/theme.test.ts",
     "test:ui": "node scripts/run-ui-tests.mjs"
   },
   "dependencies": {

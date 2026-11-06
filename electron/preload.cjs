@@ -6,9 +6,12 @@ contextBridge.exposeInMainWorld("programStudio", {
   readFiles: (filePaths) =>
     ipcRenderer.invoke("client:read-files", filePaths),
   writeFiles: (files) => ipcRenderer.invoke("client:write-files", files),
-  saveProject: (payload) =>
-    ipcRenderer.invoke("client:save-project", payload),
+  saveProject: (payload, options) =>
+    ipcRenderer.invoke("client:save-project", payload, options),
   openProject: () => ipcRenderer.invoke("client:open-project"),
   runProgram: (request) =>
     ipcRenderer.invoke("client:run-program", request),
+  setDirty: (dirty) => ipcRenderer.send("client:set-dirty", Boolean(dirty)),
+  setTheme: (preference) =>
+    ipcRenderer.send("client:set-theme", preference),
 });

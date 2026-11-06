@@ -14,12 +14,21 @@ export interface LaunchFile {
   size: number;
 }
 
+export interface AutoTokenRange {
+  tokenCount: number;
+  startTokenIndex: number;
+  startOffsetFromTokenStart: number;
+  endTokenIndex: number;
+  endOffsetFromTokenEnd: number;
+}
+
 export interface AutoPositionLaunchLocator {
   kind: "autoPosition";
   startRowIndex: number;
   startColumnIndex: number;
   endRowIndex: number;
   endColumnIndex: number;
+  tokenRange?: AutoTokenRange;
 }
 
 export interface RowColumnLaunchLocator {
@@ -103,6 +112,57 @@ export type LaunchLocatorMode =
   | "xmlPath"
   | "pattern";
 
+export const LAUNCH_PARAMETER_TYPES = [
+  "text",
+  "number",
+  "boolean",
+  "path",
+] as const;
+
+export type LaunchParameterType =
+  (typeof LAUNCH_PARAMETER_TYPES)[number];
+
+const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+export function inferParameterType(value: string): LaunchParameterType {
+  const trimmed = value.trim();
+  if (/^(?:true|false)$/i.test(trimmed)) return "boolean";
+  if (NUMBER_PATTERN.test(trimmed)) return "number";
+  return "text";
+}
+
+export function normalizeParameterType(
+  value: unknown,
+  fallbackValue = "",
+): LaunchParameterType {
+  return isLaunchParameterType(value)
+    ? (value as LaunchParameterType)
+    : inferParameterType(fallbackValue);
+}
+
+export function isLaunchParameterType(
+  value: unknown,
+): value is LaunchParameterType {
+  return LAUNCH_PARAMETER_TYPES.includes(value as LaunchParameterType);
+}
+
+export function validateParameterValue(
+  type: LaunchParameterType,
+  value: string,
+): string | null {
+  const trimmed = value.trim();
+  if (type === "number" && !NUMBER_PATTERN.test(trimmed)) {
+    return "必须是有效数值。";
+  }
+  if (type === "boolean" && !/^(?:true|false)$/i.test(trimmed)) {
+    return "必须是 true 或 false。";
+  }
+  if (type === "path" && !trimmed) {
+    return "路径不能为空。";
+  }
+  return null;
+}
+
 export interface LaunchBinding {
   id: string;
   name: string;
@@ -110,6 +170,10 @@ export interface LaunchBinding {
   filePath: string;
   locator: LaunchLocator;
   value: string;
+  parameterType: LaunchParameterType;
+  defaultValue: string;
+  unit: string;
+  description: string;
 }
 
 export interface ResolvedLaunchBinding {
@@ -165,6 +229,78 @@ function sourceLines(source: string): LineEntry[] {
   return lines;
 }
 
+interface SpecialCharacterToken {
+  index: number;
+  startCol: number;
+  endCol: number;
+}
+
+const SPECIAL_TOKEN_CHARACTER = /[\s\p{P}\p{S}]/u;
+
+export function tokenizeSpecialCharacters(
+  lineText: string,
+): SpecialCharacterToken[] {
+  const tokens: SpecialCharacterToken[] = [];
+  let regularTokenStart = -1;
+  let column = 0;
+  while (column < lineText.length) {
+    const codePoint = lineText.codePointAt(column);
+    if (codePoint === undefined) break;
+    const character = String.fromCodePoint(codePoint);
+    const characterEnd = column + character.length;
+    if (SPECIAL_TOKEN_CHARACTER.test(character)) {
+      if (regularTokenStart >= 0) {
+        tokens.push({
+          index: tokens.length,
+          startCol: regularTokenStart,
+          endCol: column,
+        });
+        regularTokenStart = -1;
+      }
+      tokens.push({
+        index: tokens.length,
+        startCol: column,
+        endCol: characterEnd,
+      });
+    } else if (regularTokenStart < 0) {
+      regularTokenStart = column;
+    }
+    column = characterEnd;
+  }
+  if (regularTokenStart >= 0) {
+    tokens.push({
+      index: tokens.length,
+      startCol: regularTokenStart,
+      endCol: lineText.length,
+    });
+  }
+  return tokens;
+}
+
+function tokenRangeForSelection(
+  lineText: string,
+  startColumn: number,
+  endColumn: number,
+): AutoTokenRange | undefined {
+  if (endColumn <= startColumn) return undefined;
+  const tokens = tokenizeSpecialCharacters(lineText);
+  const startToken = tokens.find(
+    (token) =>
+      startColumn >= token.startCol && startColumn < token.endCol,
+  );
+  const endToken = tokens.find(
+    (token) => endColumn > token.startCol && endColumn <= token.endCol,
+  );
+  if (!startToken || !endToken) return undefined;
+  return {
+    tokenCount: tokens.length,
+    startTokenIndex: startToken.index,
+    startOffsetFromTokenStart: startColumn - startToken.startCol,
+    endTokenIndex: endToken.index,
+    endOffsetFromTokenEnd: endToken.endCol - endColumn,
+  };
+}
+
 function resolveRowColumnLocator(
   source: string,
   locator: RowColumnLaunchLocator,
@@ -207,12 +343,57 @@ function resolveAutoPositionLocator(
   source: string,
   locator: AutoPositionLaunchLocator,
 ): ResolvedLaunchBinding {
+  const tokenRange = locator.tokenRange;
+  if (!tokenRange) {
+    return resolveRowColumnLocator(source, {
+      kind: "rowColumn",
+      startRowIndex: locator.startRowIndex,
+      startColumnIndex: locator.startColumnIndex,
+      endRowIndex: locator.endRowIndex,
+      endColumnIndex: locator.endColumnIndex,
+    });
+  }
+  if (locator.startRowIndex !== locator.endRowIndex) {
+    throw new LauncherError("自动分词定位仅支持同一行内的选区。");
+  }
+  const line = lineAt(source, locator.startRowIndex);
+  const tokens = tokenizeSpecialCharacters(line.text);
+  if (tokens.length !== tokenRange.tokenCount) {
+    throw new LauncherError(
+      "自动分词定位已失效：当前行的特殊字符 Token 数量发生变化。",
+    );
+  }
+  const startToken = tokens[tokenRange.startTokenIndex];
+  const endToken = tokens[tokenRange.endTokenIndex];
+  if (
+    !Number.isInteger(tokenRange.startTokenIndex) ||
+    !Number.isInteger(tokenRange.endTokenIndex) ||
+    !Number.isInteger(tokenRange.startOffsetFromTokenStart) ||
+    !Number.isInteger(tokenRange.endOffsetFromTokenEnd) ||
+    !startToken ||
+    !endToken ||
+    tokenRange.startOffsetFromTokenStart < 0 ||
+    tokenRange.endOffsetFromTokenEnd < 0
+  ) {
+    throw new LauncherError("自动分词定位边界无效。");
+  }
+  const startColumn =
+    startToken.startCol + tokenRange.startOffsetFromTokenStart;
+  const endColumn =
+    endToken.endCol - tokenRange.endOffsetFromTokenEnd;
+  if (
+    startColumn > startToken.endCol ||
+    endColumn < endToken.startCol ||
+    endColumn <= startColumn
+  ) {
+    throw new LauncherError("自动分词定位边界越界。");
+  }
   return resolveRowColumnLocator(source, {
     kind: "rowColumn",
     startRowIndex: locator.startRowIndex,
-    startColumnIndex: locator.startColumnIndex,
-    endRowIndex: locator.endRowIndex,
-    endColumnIndex: locator.endColumnIndex,
+    startColumnIndex: startColumn,
+    endRowIndex: locator.startRowIndex,
+    endColumnIndex: endColumn,
   });
 }
 
@@ -814,29 +995,63 @@ export function createBindingFromSelection(
 
   const selectedText = file.content.slice(selection.start, selection.end);
   const suggestedName = selectedText.trim();
-  const startLineStart =
-    file.content.lastIndexOf("\n", Math.max(0, selection.start - 1)) + 1;
-  const lastSelectedIndex = Math.max(selection.start, selection.end - 1);
-  const endLineStart =
-    file.content.lastIndexOf("\n", Math.max(0, lastSelectedIndex - 1)) + 1;
-  const locator: AutoPositionLaunchLocator = {
-    kind: "autoPosition",
-    startRowIndex:
-      file.content.slice(0, selection.start).split("\n").length,
-    startColumnIndex: selection.start - startLineStart,
-    endRowIndex:
-      file.content.slice(0, lastSelectedIndex).split("\n").length,
-    endColumnIndex: selection.end - endLineStart,
-  };
+  const locator = createAutoPositionLocator(file, selection);
   const resolved = resolveLaunchBinding(file.content, locator);
+  const value = resolved.value;
   return {
     id,
     name: name?.trim() || suggestedName.slice(0, 40) || "未命名参数",
     direction,
     filePath: file.path,
     locator,
-    value: resolved.value,
+    value,
+    parameterType: inferParameterType(value),
+    defaultValue: value,
+    unit: "",
+    description: "",
   };
+}
+
+export function createAutoPositionLocator(
+  file: LaunchFile,
+  selection: SourceRange,
+): AutoPositionLaunchLocator {
+  if (selection.end <= selection.start) {
+    throw new LauncherError("请先在文件中选中要绑定的内容。");
+  }
+  if (selection.start < 0 || selection.end > file.content.length) {
+    throw new LauncherError("选区已失效，请重新选择。");
+  }
+  const startLineStart =
+    file.content.lastIndexOf("\n", Math.max(0, selection.start - 1)) + 1;
+  const lastSelectedIndex = Math.max(selection.start, selection.end - 1);
+  const endLineStart =
+    file.content.lastIndexOf("\n", Math.max(0, lastSelectedIndex - 1)) + 1;
+  const startRowIndex =
+    file.content.slice(0, selection.start).split("\n").length;
+  const endRowIndex =
+    file.content.slice(0, lastSelectedIndex).split("\n").length;
+  const startColumnIndex = selection.start - startLineStart;
+  const endColumnIndex = selection.end - endLineStart;
+  const locator: AutoPositionLaunchLocator = {
+    kind: "autoPosition",
+    startRowIndex,
+    startColumnIndex,
+    endRowIndex,
+    endColumnIndex,
+  };
+  if (startRowIndex === endRowIndex) {
+    const line = sourceLines(file.content)[startRowIndex - 1];
+    const tokenRange = line
+      ? tokenRangeForSelection(
+          line.text,
+          startColumnIndex,
+          endColumnIndex,
+        )
+      : undefined;
+    if (tokenRange) locator.tokenRange = tokenRange;
+  }
+  return locator;
 }
 
 export interface RowColumnParameter {
@@ -938,13 +1153,18 @@ export function createBindingFromLocator(
     file.content,
     locator,
   );
+  const value = resolved.value;
   return {
     id,
     name,
     direction,
     filePath: file.path,
     locator,
-    value: resolved.value,
+    value,
+    parameterType: inferParameterType(value),
+    defaultValue: value,
+    unit: "",
+    description: "",
   };
 }
 
@@ -966,13 +1186,18 @@ export function createBindingFromRowColumn(
     file.content,
     locator,
   );
+  const value = resolved.value;
   return {
     id,
     name,
     direction,
     filePath: file.path,
     locator,
-    value: resolved.value,
+    value,
+    parameterType: inferParameterType(value),
+    defaultValue: value,
+    unit: "",
+    description: "",
   };
 }
 
@@ -1004,10 +1229,11 @@ function replacementText(
 }
 
 function updatedLocatorAfterWrite(
+  source: string,
   locator: LaunchLocator,
   replacement: string,
 ): LaunchLocator {
-  if (locator.kind === "autoPosition" || locator.kind === "rowColumn") {
+  if (locator.kind === "rowColumn") {
     const lines = replacement.split("\n");
     return {
       ...locator,
@@ -1018,6 +1244,39 @@ function updatedLocatorAfterWrite(
           ? locator.startColumnIndex + replacement.length
           : (lines.at(-1)?.length ?? 0),
     };
+  }
+  if (locator.kind === "autoPosition") {
+    const lines = replacement.split("\n");
+    const updated: AutoPositionLaunchLocator = {
+      ...locator,
+      endRowIndex:
+        locator.startRowIndex + Math.max(0, lines.length - 1),
+      endColumnIndex:
+        lines.length === 1
+          ? locator.startColumnIndex + replacement.length
+          : (lines.at(-1)?.length ?? 0),
+    };
+    if (!locator.tokenRange) return updated;
+    const fixedLocator: RowColumnLaunchLocator = {
+      kind: "rowColumn",
+      startRowIndex: updated.startRowIndex,
+      startColumnIndex: updated.startColumnIndex,
+      endRowIndex: updated.endRowIndex,
+      endColumnIndex: updated.endColumnIndex,
+    };
+    try {
+      const expected = resolveRowColumnLocator(source, fixedLocator);
+      const resolved = resolveAutoPositionLocator(source, updated);
+      if (
+        resolved.start === expected.start &&
+        resolved.end === expected.end
+      ) {
+        return updated;
+      }
+    } catch {
+      // Preserve the existing fixed-coordinate behavior after a write.
+    }
+    return { ...updated, tokenRange: undefined };
   }
   return locator;
 }
@@ -1041,6 +1300,15 @@ export function writeInputBindings(
   const errors: BindingError[] = [];
   const replacements = inputs.flatMap((binding) => {
     try {
+      const valueError = validateParameterValue(
+        binding.parameterType,
+        binding.value,
+      );
+      if (valueError) {
+        throw new LauncherError(
+          `参数“${binding.name}”${valueError}`,
+        );
+      }
       const resolved = resolveLaunchBinding(source, binding.locator);
       return [
         {
@@ -1105,7 +1373,11 @@ export function writeInputBindings(
       if (replacement === undefined) return binding;
       return {
         ...binding,
-        locator: updatedLocatorAfterWrite(binding.locator, replacement),
+        locator: updatedLocatorAfterWrite(
+          nextSource,
+          binding.locator,
+          replacement,
+        ),
       };
     }),
     writtenBindingIds: inputs.map((binding) => binding.id),
