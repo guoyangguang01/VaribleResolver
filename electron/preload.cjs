@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("programStudio", {
   readFiles: (filePaths) =>
     ipcRenderer.invoke("client:read-files", filePaths),
   writeFiles: (files) => ipcRenderer.invoke("client:write-files", files),
+  updateFiles: (files) => ipcRenderer.invoke("client:update-files", files),
   saveProject: (payload, options) =>
     ipcRenderer.invoke("client:save-project", payload, options),
   openProject: () => ipcRenderer.invoke("client:open-project"),

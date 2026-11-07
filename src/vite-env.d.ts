@@ -25,6 +25,9 @@ interface ProgramStudioApi {
   writeFiles: (
     files: Array<{ path: string; content: string }>,
   ) => Promise<string[]>;
+  updateFiles: (
+    files: Array<{ path: string; content: string }>,
+  ) => Promise<string[]>;
   saveProject: (
     payload: unknown,
     options?: {

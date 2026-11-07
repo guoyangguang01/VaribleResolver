@@ -42,22 +42,57 @@ test("desktop client exposes path file IO and local program execution", async ()
         setDirty: typeof window.programStudio?.setDirty,
         setTheme: typeof window.programStudio?.setTheme,
         saveProject: typeof window.programStudio?.saveProject,
+        updateFiles: typeof window.programStudio?.updateFiles,
       })),
     ).toEqual({
       setDirty: "function",
       setTheme: "function",
       saveProject: "function",
+      updateFiles: "function",
     });
 
     const roundTrip = await page.evaluate(async (filePath) => {
       const api = window.programStudio;
       if (!api) throw new Error("Desktop API unavailable");
       await api.writeFiles([
-        { path: filePath, content: "VALUE: 42\nSTATUS: OK\n" },
+        { path: filePath, content: "VALUE: 42\r\nSTATUS: OK\r\n" },
       ]);
       return api.readFiles([filePath]);
     }, tempFile);
     expect(roundTrip[0]?.content).toContain("STATUS: OK");
+
+    const updated = await page.evaluate(async (filePath) => {
+      const api = window.programStudio;
+      if (!api) throw new Error("Desktop API unavailable");
+      await api.updateFiles([
+        { path: filePath, content: "VALUE: 43\nSTATUS: UPDATED\n" },
+      ]);
+      return api.readFiles([filePath]);
+    }, tempFile);
+    expect(updated[0]?.content).toContain("STATUS: UPDATED");
+    expect(await fs.readFile(tempFile, "utf8")).toBe(
+      "VALUE: 43\r\nSTATUS: UPDATED\r\n",
+    );
+
+    const missingPath = path.join(
+      os.tmpdir(),
+      `program-studio-missing-${Date.now()}.txt`,
+    );
+    expect(
+      await page.evaluate(async (filePath) => {
+        const api = window.programStudio;
+        if (!api) throw new Error("Desktop API unavailable");
+        try {
+          await api.updateFiles([{ path: filePath, content: "created" }]);
+          return false;
+        } catch {
+          return true;
+        }
+      }, missingPath),
+    ).toBe(true);
+    await expect(fs.stat(missingPath)).rejects.toMatchObject({
+      code: "ENOENT",
+    });
 
     const run = await page.evaluate(
       ({ executable }) =>

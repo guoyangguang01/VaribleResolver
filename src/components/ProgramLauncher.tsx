@@ -1100,6 +1100,8 @@ export default function ProgramLauncher() {
       return {
         ...file,
         content: replacement.content,
+        sourcePath: replacement.sourcePath,
+        sourceContent: replacement.sourceContent,
         flavor: sourceFlavorFromFilename(file.name),
         size: replacement.size,
       };
@@ -1171,6 +1173,7 @@ export default function ProgramLauncher() {
         createLaunchFile(
           file.path,
           normalizeSourceText(file.content),
+          file.path,
         ),
       );
       mergeImportedFiles(imported, [], "已从本机载入");
@@ -1225,6 +1228,7 @@ export default function ProgramLauncher() {
 
   const saveProjectFolder = async (
     requestedMode: "auto" | "save" | "saveAs" = "auto",
+    options: { syncOriginalFiles?: boolean } = {},
   ) => {
     if (!desktopApi) {
       setNotice({
@@ -1251,6 +1255,17 @@ export default function ProgramLauncher() {
         bindings,
         createdAt: projectCreatedAt ?? undefined,
       });
+      const originalFileContents = new Map<string, string>();
+      if (options.syncOriginalFiles ?? requestedMode !== "saveAs") {
+        for (const file of files) {
+          if (
+            file.sourcePath &&
+            file.content !== file.sourceContent
+          ) {
+            originalFileContents.set(file.sourcePath, file.content);
+          }
+        }
+      }
       const saved = await desktopApi.saveProject(
         payload,
         mode === "save"
@@ -1269,13 +1284,39 @@ export default function ProgramLauncher() {
         ),
       );
       setProjectCreatedAt(payload.manifest.createdAt);
+      let savedFiles = files;
+      if (originalFileContents.size > 0) {
+        try {
+          await desktopApi.updateFiles(
+            [...originalFileContents].map(([path, content]) => ({
+              path,
+              content,
+            })),
+          );
+          savedFiles = files.map((file) => {
+            const sourceContent = file.sourcePath
+              ? originalFileContents.get(file.sourcePath)
+              : undefined;
+            return sourceContent === undefined
+              ? file
+              : { ...file, sourceContent };
+          });
+          setFiles(savedFiles);
+        } catch (error) {
+          setNotice({
+            tone: "error",
+            text: `工程已保存，但更新原文件失败：${errorMessage(error)}`,
+          });
+          return null;
+        }
+      }
       setSavedRevision(
         projectRevision({
           name: payload.manifest.name,
           program,
           arguments: argumentText,
           workingDirectory,
-          files,
+          files: savedFiles,
           bindings,
         }),
       );
@@ -1283,7 +1324,9 @@ export default function ProgramLauncher() {
         tone: "success",
         text:
           mode === "save"
-            ? `工程已保存：${saved.path}`
+            ? originalFileContents.size > 0
+              ? `工程已保存，已更新 ${originalFileContents.size} 个原文件：${saved.path}`
+              : `工程已保存：${saved.path}`
             : `工程已另存为：${saved.path}`,
       });
       return { payload, path: saved.path };
@@ -1796,7 +1839,9 @@ export default function ProgramLauncher() {
     try {
       const wroteInputs = await writeAllInputs();
       if (!wroteInputs) return;
-      const saved = await saveProjectFolder("auto");
+      const saved = await saveProjectFolder("auto", {
+        syncOriginalFiles: false,
+      });
       if (!saved) return;
       const runtimeProject = parseProjectFolder({
         ...saved.payload,
@@ -2564,7 +2609,11 @@ export default function ProgramLauncher() {
               aria-label="保存工程"
               disabled={!desktopApi}
               onClick={() => void saveProjectFolder("auto")}
-              title={desktopApi ? "保存工程目录" : "仅在桌面客户端中可用"}
+              title={
+                desktopApi
+                  ? "保存工程目录并更新已修改的原文件"
+                  : "仅在桌面客户端中可用"
+              }
               type="button"
             >
               <SaveIcon />

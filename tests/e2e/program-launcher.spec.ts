@@ -402,6 +402,13 @@ test("loads and saves a folder project with files and launch configuration", asy
       selectFiles: async () => [],
       readFiles: async () => [],
       writeFiles: async () => [],
+      updateFiles: async (files: any[]) => {
+        (window as any).__updatedFiles = [
+          ...((window as any).__updatedFiles ?? []),
+          files,
+        ];
+        return files.map((file) => file.path);
+      },
       saveProject: async (payload: any, options: any) => {
         (window as any).__savedProject = payload;
         (window as any).__savedProjectOptions = options;
@@ -458,6 +465,19 @@ test("loads and saves a folder project with files and launch configuration", asy
   await runner.getByLabel("参数默认值").fill("false");
   await runner.getByLabel("参数单位").fill("bar");
   await runner.getByLabel("参数备注").fill("压力开关");
+  await runner
+    .locator(".runner-editor-shell .codemirror-host")
+    .evaluate((element) => {
+      const view = (element as HTMLElement & { __cmView?: any }).__cmView;
+      if (!view) throw new Error("CodeMirror view not found");
+      view.dispatch({
+        changes: {
+          from: 0,
+          to: view.state.doc.length,
+          insert: "VALUE: 43\n",
+        },
+      });
+    });
 
   await runner.getByRole("button", { name: "保存工程" }).click();
   const saved = await page.evaluate(() => (window as any).__savedProject);
@@ -473,17 +493,43 @@ test("loads and saves a folder project with files and launch configuration", asy
     unit: "bar",
     description: "压力开关",
   });
-  expect(saved.files[0].content).toContain("VALUE: 42");
+  expect(saved.files[0].content).toContain("VALUE: 43");
   expect(saveOptions).toEqual({
     mode: "save",
     path: "D:\\Projects\\工程 A",
   });
+  expect(
+    await page.evaluate(() => (window as any).__updatedFiles),
+  ).toEqual([
+    [
+      {
+        path: "D:\\Cases\\data.txt",
+        content: "VALUE: 43\n",
+      },
+    ],
+  ]);
 
+  await runner
+    .locator(".runner-editor-shell .codemirror-host")
+    .evaluate((element) => {
+      const view = (element as HTMLElement & { __cmView?: any }).__cmView;
+      if (!view) throw new Error("CodeMirror view not found");
+      view.dispatch({
+        changes: {
+          from: 0,
+          to: view.state.doc.length,
+          insert: "VALUE: 44\n",
+        },
+      });
+    });
   await runner.getByRole("button", { name: "另存为" }).click();
   const saveAsOptions = await page.evaluate(
     () => (window as any).__savedProjectOptions,
   );
   expect(saveAsOptions).toEqual({ mode: "saveAs" });
+  expect(
+    await page.evaluate(() => (window as any).__updatedFiles),
+  ).toHaveLength(1);
 });
 
 test("switches themes and persists the preference", async ({ page }) => {
@@ -532,6 +578,7 @@ test("confirms before replacing a project with unsaved changes", async ({
       selectFiles: async () => [],
       readFiles: async () => [],
       writeFiles: async () => [],
+      updateFiles: async () => [],
       saveProject: async () => null,
       openProject: async () => payload,
       runProgram: async () => ({

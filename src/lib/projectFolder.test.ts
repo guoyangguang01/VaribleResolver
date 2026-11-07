@@ -126,6 +126,50 @@ test("rewrites source file paths to generated project files", () => {
   );
 });
 
+test("preserves the original source path across a project round trip", () => {
+  const originalPath = "C:\\Cases\\fa1\\CFX1.ccl";
+  const config = createLaunchFile(
+    "C:\\Cases\\fa1\\working\\CFX1.ccl",
+    "Total Time = 0.04 [s]",
+    originalPath,
+  );
+  const project = serializeProjectFolder({
+    name: "原文件工程",
+    program: "C:\\Tools\\runner.exe",
+    arguments: '--config "C:\\Cases\\fa1\\working\\CFX1.ccl"',
+    workingDirectory: "C:\\Cases\\fa1\\working",
+    files: [config],
+    bindings: [],
+  });
+
+  assert.equal(project.manifest.files[0].path, originalPath);
+  const parsed = parseProjectFolder({
+    ...project,
+    folderPath: "D:\\Generated\\original-project",
+  });
+  assert.equal(
+    parsed.files[0].path,
+    "D:\\Generated\\original-project\\files\\CFX1.ccl",
+  );
+  assert.equal(parsed.files[0].sourcePath, originalPath);
+  assert.equal(parsed.files[0].sourceContent, "Total Time = 0.04 [s]");
+
+  const reserialized = serializeProjectFolder({
+    name: parsed.manifest.name,
+    program: parsed.launch.program,
+    arguments: parsed.launch.arguments,
+    workingDirectory: parsed.launch.workingDirectory,
+    files: parsed.files,
+    bindings: parsed.bindings,
+    createdAt: parsed.manifest.createdAt,
+  });
+  assert.equal(reserialized.manifest.files[0].path, originalPath);
+  assert.equal(
+    reserialized.files[0].relativePath,
+    project.files[0].relativePath,
+  );
+});
+
 test("loads an existing v2 project that still stores absolute binding paths", () => {
   const project = JSON.parse(
     JSON.stringify(sampleProject()),

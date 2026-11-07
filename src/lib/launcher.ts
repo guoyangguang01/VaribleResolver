@@ -8,6 +8,8 @@ export type LaunchBindingDirection = "input" | "output";
 
 export interface LaunchFile {
   path: string;
+  sourcePath?: string;
+  sourceContent?: string;
   name: string;
   content: string;
   flavor: SourceFlavor;
@@ -931,14 +933,22 @@ function resolveXmlPathLocator(
 export function createLaunchFile(
   path: string,
   content: string,
+  sourcePath?: string,
 ): LaunchFile {
   const normalizedPath = path.trim();
+  const normalizedSourcePath = sourcePath?.trim() || undefined;
   const slash = Math.max(
     normalizedPath.lastIndexOf("/"),
     normalizedPath.lastIndexOf("\\"),
   );
   return {
     path: normalizedPath,
+    ...(normalizedSourcePath
+      ? {
+          sourcePath: normalizedSourcePath,
+          sourceContent: content,
+        }
+      : {}),
     name: normalizedPath.slice(slash + 1) || normalizedPath,
     content,
     flavor: sourceFlavorFromFilename(normalizedPath),

@@ -152,7 +152,7 @@ export function serializeProjectFolder(
   const folderName = safeFileName(name, "program-project");
   const usedFileNames = new Set<string>();
   const files = snapshot.files.map((file, index) => ({
-    path: file.path,
+    path: file.sourcePath ?? file.path,
     relativePath: (() => {
       const baseName = safeFileName(file.name, `file-${index + 1}.txt`);
       const extensionIndex = baseName.lastIndexOf(".");
@@ -171,7 +171,10 @@ export function serializeProjectFolder(
     })(),
   }));
   const relativePathByFilePath = new Map(
-    files.map((file) => [file.path, file.relativePath]),
+    snapshot.files.map((file, index) => [
+      file.path,
+      files[index].relativePath,
+    ]),
   );
   const bindings = snapshot.bindings.map((binding) => {
     const relativePath = relativePathByFilePath.get(binding.filePath);
@@ -193,9 +196,9 @@ export function serializeProjectFolder(
     files,
   };
   const pathReplacements = new Map(
-    files.map((file) => [
+    snapshot.files.map((file, index) => [
       file.path,
-      file.relativePath.replace(/^files\//, ""),
+      files[index].relativePath.replace(/^files\//, ""),
     ]),
   );
   return {
@@ -290,7 +293,7 @@ export function parseProjectFolder(payload: unknown): {
     const runtimePath = folderPath
       ? joinRuntimePath(folderPath, relativePath)
       : sourcePath;
-    const file = createLaunchFile(runtimePath, content);
+    const file = createLaunchFile(runtimePath, content, sourcePath);
     runtimePathBySourcePath.set(sourcePath, runtimePath);
     runtimePathByRelativePath.set(
       relativePath.replace(/^files\//, ""),

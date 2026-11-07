@@ -157,6 +157,60 @@ ipcMain.handle("client:write-files", async (_event, files) => {
   return written;
 });
 
+ipcMain.handle("client:update-files", async (_event, files) => {
+  if (!Array.isArray(files)) throw new Error("文件列表无效。");
+  const targets = [];
+  for (const file of files) {
+    if (
+      !file ||
+      typeof file.path !== "string" ||
+      typeof file.content !== "string"
+    ) {
+      throw new Error("原文件更新参数无效。");
+    }
+    if (!path.isAbsolute(file.path)) {
+      throw new Error(`原文件必须使用绝对路径：${file.path}`);
+    }
+    const absolutePath = path.resolve(file.path);
+    if (Buffer.byteLength(file.content, "utf8") > MAX_FILE_BYTES) {
+      throw new Error(`文件超过 32 MB：${absolutePath}`);
+    }
+    let stat;
+    try {
+      stat = await fs.stat(absolutePath);
+    } catch {
+      throw new Error(`原文件不存在：${absolutePath}`);
+    }
+    if (!stat.isFile()) throw new Error(`不是文件：${absolutePath}`);
+    if (stat.size > MAX_FILE_BYTES) {
+      throw new Error(`文件超过 32 MB：${absolutePath}`);
+    }
+    targets.push({
+      absolutePath,
+      content: file.content,
+      original: await fs.readFile(absolutePath),
+    });
+  }
+
+  const written = [];
+  for (const target of targets) {
+    const usesCrLf = target.original.includes(Buffer.from("\r\n"));
+    let content = usesCrLf
+      ? target.content.replace(/\r\n?/g, "\n").replace(/\n/g, "\r\n")
+      : target.content.replace(/\r\n?/g, "\n");
+    const hasUtf8Bom =
+      target.original[0] === 0xef &&
+      target.original[1] === 0xbb &&
+      target.original[2] === 0xbf;
+    if (hasUtf8Bom && !content.startsWith("\ufeff")) {
+      content = `\ufeff${content}`;
+    }
+    await fs.writeFile(target.absolutePath, content, "utf8");
+    written.push(target.absolutePath);
+  }
+  return written;
+});
+
 ipcMain.handle("client:save-project", async (_event, payload, options) => {
   if (
     !payload ||
