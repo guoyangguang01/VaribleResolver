@@ -16,7 +16,7 @@ test("desktop client exposes path file IO and local program execution", async ()
     path.join(projectDirectory, "project.json"),
     JSON.stringify({
       schema: "program-studio-folder-project",
-      schemaVersion: 2,
+      schemaVersion: 4,
     }),
     "utf8",
   );
@@ -99,7 +99,6 @@ test("desktop client exposes path file IO and local program execution", async ()
         window.programStudio?.runProgram({
           program: executable,
           args: ["-e", "console.log('desktop-run-ok')"],
-          timeoutMs: 10_000,
         }),
       { executable: process.execPath },
     );
@@ -115,25 +114,29 @@ test("desktop client exposes path file IO and local program execution", async ()
             folderName: "Desktop Save",
             manifest: {
               schema: "program-studio-folder-project",
-              schemaVersion: 2,
+              schemaVersion: 4,
               name: "Desktop Save",
               createdAt: "2026-11-05T00:00:00.000Z",
               updatedAt: "2026-11-05T00:00:00.000Z",
               launchFile: "launch.json",
               parameterFile: "parameters.json",
+              outputFile: "outputs.json",
               files: [
                 {
                   path: "D:\\cases\\data.txt",
                   relativePath: "files/001-data.txt",
+                  roles: ["support"],
                 },
               ],
             },
             launch: {
+              mode: "direct",
               program: "runner.exe",
               arguments: "--input data.txt",
               workingDirectory: "D:\\cases",
             },
             parameters: { bindings: [] },
+            outputs: { outputs: [] },
             files: [
               {
                 relativePath: "files/001-data.txt",
@@ -147,9 +150,25 @@ test("desktop client exposes path file IO and local program execution", async ()
       { directory: projectDirectory },
     );
     expect(saved?.path).toBe(projectDirectory);
+    const runWorkspace = await page.evaluate(
+      async (projectPath) => {
+        const api = window.programStudio;
+        if (!api) throw new Error("Desktop API unavailable");
+        return api.createRunWorkspace(projectPath);
+      },
+      projectDirectory,
+    );
+    expect(runWorkspace.runId).toMatch(/^run-/);
+    expect(runWorkspace.path).toContain(path.join("runs", runWorkspace.runId));
     expect(
       await fs.readFile(
         path.join(projectDirectory, "files", "001-data.txt"),
+        "utf8",
+      ),
+    ).toContain("VALUE: 42");
+    expect(
+      await fs.readFile(
+        path.join(runWorkspace.path, "files", "001-data.txt"),
         "utf8",
       ),
     ).toContain("VALUE: 42");

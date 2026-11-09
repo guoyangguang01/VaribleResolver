@@ -11,14 +11,13 @@ import {
 import { createLocalExecutionAdapter } from "../src/lib/localExecutionAdapter.ts";
 import { parseRunRequest } from "../src/lib/runRequest.ts";
 import { normalizeSourceText } from "../src/lib/variables.ts";
-
-const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
+import { assertInsideRoot } from "../electron/projectPaths.js";
+import { createProjectRunWorkspace } from "../electron/runWorkspace.js";
 
 interface CliOptions {
   projectDirectory: string;
   overrides: ProjectInputOverride[];
   requestFile: string | null;
-  timeoutMs: number;
 }
 
 interface LoadedProject {
@@ -33,10 +32,8 @@ function usage(): string {
     "  npm run project:run -- --project <工程目录> [选项]",
     "",
     "选项：",
-    "  --set-id <绑定ID=值>     按绑定 ID 覆盖输入参数，可重复",
-    "  --set-name <参数名=值>   按唯一参数名称覆盖，可重复",
+    "  --set <文件名.参数名=值> 按复合主键覆盖输入参数，可重复",
     "  --request <JSON 文件>    使用标准运行请求文件",
-    "  --timeout-ms <毫秒>      程序超时时间，默认 600000",
     "  --help                   显示帮助",
   ].join("\n");
 }
@@ -80,10 +77,24 @@ function parseSelectorValue(
   return [selector, expression.slice(separator + 1)];
 }
 
+function parameterOverride(expression: string): ProjectInputOverride {
+  const [key, value] = parseSelectorValue(expression, "--set");
+  const separator = key.lastIndexOf(".");
+  if (separator <= 0 || separator === key.length - 1) {
+    throw new Error(
+      `--set 主键格式无效：“${key}”，应为 文件名.参数名=值。`,
+    );
+  }
+  return {
+    fileName: key.slice(0, separator).trim(),
+    parameterName: key.slice(separator + 1).trim(),
+    value,
+  };
+}
+
 function parseArguments(args: string[]): CliOptions {
   let projectDirectory = "";
   let requestFile: string | null = null;
-  let timeoutMs = DEFAULT_TIMEOUT_MS;
   const overrides: ProjectInputOverride[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -106,40 +117,18 @@ function parseArguments(args: string[]): CliOptions {
       projectDirectory = inlineProject;
       continue;
     }
-    if (argument === "--set-id") {
-      const [bindingId, value] = parseSelectorValue(
-        requireNextArgument(args, index, "--set-id"),
-        "--set-id",
+    if (argument === "--set") {
+      overrides.push(
+        parameterOverride(
+          requireNextArgument(args, index, "--set"),
+        ),
       );
-      overrides.push({ target: "bindingId", bindingId, value });
       index += 1;
       continue;
     }
-    const inlineSetId = optionValue(argument, "--set-id");
-    if (inlineSetId !== null) {
-      const [bindingId, value] = parseSelectorValue(
-        inlineSetId,
-        "--set-id",
-      );
-      overrides.push({ target: "bindingId", bindingId, value });
-      continue;
-    }
-    if (argument === "--set-name") {
-      const [name, value] = parseSelectorValue(
-        requireNextArgument(args, index, "--set-name"),
-        "--set-name",
-      );
-      overrides.push({ target: "name", name, value });
-      index += 1;
-      continue;
-    }
-    const inlineSetName = optionValue(argument, "--set-name");
-    if (inlineSetName !== null) {
-      const [name, value] = parseSelectorValue(
-        inlineSetName,
-        "--set-name",
-      );
-      overrides.push({ target: "name", name, value });
+    const inlineSet = optionValue(argument, "--set");
+    if (inlineSet !== null) {
+      overrides.push(parameterOverride(inlineSet));
       continue;
     }
     if (argument === "--request") {
@@ -156,18 +145,6 @@ function parseArguments(args: string[]): CliOptions {
       requestFile = inlineRequest;
       continue;
     }
-    if (argument === "--timeout-ms") {
-      timeoutMs = Number(
-        requireNextArgument(args, index, "--timeout-ms"),
-      );
-      index += 1;
-      continue;
-    }
-    const inlineTimeout = optionValue(argument, "--timeout-ms");
-    if (inlineTimeout !== null) {
-      timeoutMs = Number(inlineTimeout);
-      continue;
-    }
     if (!argument.startsWith("--") && !projectDirectory) {
       projectDirectory = argument;
       continue;
@@ -178,14 +155,10 @@ function parseArguments(args: string[]): CliOptions {
   if (!projectDirectory) {
     throw new Error("必须使用 --project 指定工程目录。");
   }
-  if (!Number.isFinite(timeoutMs) || timeoutMs < 1000) {
-    throw new Error("--timeout-ms 必须是不小于 1000 的数字。");
-  }
   return {
     projectDirectory,
     overrides,
     requestFile,
-    timeoutMs,
   };
 }
 
@@ -195,11 +168,11 @@ function resolveInsideProject(
 ): string {
   const root = path.resolve(projectDirectory);
   const target = path.resolve(root, relativePath);
-  const relative = path.relative(root, target);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error(`工程文件路径越界：${relativePath}`);
-  }
-  return target;
+  return assertInsideRoot(
+    target,
+    root,
+    `工程文件路径越界：${relativePath}`,
+  );
 }
 
 async function readJson(filePath: string): Promise<unknown> {
@@ -214,6 +187,7 @@ async function loadRequestFile(
 
 async function loadProject(
   projectDirectory: string,
+  mode: "edit" | "run" = "edit",
 ): Promise<LoadedProject> {
   const root = path.resolve(projectDirectory);
   const manifest = await readJson(path.join(root, "project.json"));
@@ -221,6 +195,7 @@ async function loadProject(
   const parameters = await readJson(
     path.join(root, "parameters.json"),
   );
+  const outputs = await readJson(path.join(root, "outputs.json"));
   if (
     typeof manifest !== "object" ||
     manifest === null ||
@@ -241,21 +216,46 @@ async function loadProject(
       throw new Error("project.json 中存在无效文件条目。");
     }
     const filePath = resolveInsideProject(root, entry.relativePath);
+    let content: string;
+    try {
+      content = await fs.readFile(filePath, "utf8");
+    } catch (error) {
+      const roles =
+        "roles" in entry && Array.isArray(entry.roles)
+          ? entry.roles
+          : [];
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "ENOENT" &&
+        roles.includes("output-reference") &&
+        !roles.includes("input") &&
+        !roles.includes("support") &&
+        !roles.includes("program-entry")
+      ) {
+        content = "";
+      } else {
+        throw error;
+      }
+    }
     files.push({
       relativePath: entry.relativePath,
-      content: normalizeSourceText(
-        await fs.readFile(filePath, "utf8"),
-      ),
+      content: normalizeSourceText(content),
     });
   }
 
-  const parsed = parseProjectFolder({
-    folderPath: root,
-    manifest,
-    launch,
-    parameters,
-    files,
-  });
+  const parsed = parseProjectFolder(
+    {
+      folderPath: root,
+      manifest,
+      launch,
+      parameters,
+      outputs,
+      files,
+    },
+    { mode },
+  );
   return {
     path: root,
     name: parsed.manifest.name,
@@ -263,6 +263,8 @@ async function loadProject(
       program: parsed.launch.program,
       arguments: parsed.launch.arguments,
       workingDirectory: parsed.launch.workingDirectory,
+      launchMode: parsed.launch.mode,
+      environment: parsed.launch.environment,
       files: parsed.files,
       bindings: parsed.bindings,
     },
@@ -275,7 +277,11 @@ async function main() {
     ? await loadRequestFile(path.resolve(options.requestFile))
     : [];
   const overrides = [...fileOverrides, ...options.overrides];
-  const project = await loadProject(options.projectDirectory);
+  const definition = await loadProject(options.projectDirectory);
+  const runWorkspace = await createProjectRunWorkspace(
+    definition.path,
+  );
+  const project = await loadProject(runWorkspace.path, "run");
   const adapter = createLocalExecutionAdapter({
     writableRoot: project.path,
   });
@@ -283,7 +289,6 @@ async function main() {
     snapshot: project.snapshot,
     overrides,
     adapter,
-    timeoutMs: options.timeoutMs,
   });
 
   console.log(
@@ -293,7 +298,9 @@ async function main() {
         schemaVersion: 2,
         project: {
           name: project.name,
-          path: project.path,
+          path: definition.path,
+          runId: runWorkspace.runId,
+          runPath: runWorkspace.path,
         },
         overrides,
         execution,

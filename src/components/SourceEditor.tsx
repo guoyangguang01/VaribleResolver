@@ -29,6 +29,10 @@ import {
 } from "@codemirror/view";
 import type { SourceFlavor, SourceRange } from "../lib/variables";
 import type { ResolvedTheme } from "../lib/theme";
+import type {
+  SourceEditorChange,
+  SourceTextChange,
+} from "../lib/relocation";
 
 export interface SourceEditorHandle {
   focus: () => void;
@@ -48,7 +52,7 @@ interface SourceEditorProps {
   highlightRanges: SourceRange[];
   theme: ResolvedTheme;
   ariaLabel?: string;
-  onChange: (value: string) => void;
+  onChange: (change: SourceEditorChange) => void;
   onSelectionChange: (range: SourceRange) => void;
   onLocateShortcut: () => void;
   onValueDoubleClick?: (position: number) => void;
@@ -280,7 +284,20 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
                   transaction.annotation(externalValueUpdate),
                 )
               ) {
-                onChangeRef.current(update.state.doc.toString());
+                const changes: SourceTextChange[] = [];
+                update.changes.iterChanges(
+                  (from, to, _fromNew, _toNew, inserted) => {
+                    changes.push({
+                      from,
+                      to,
+                      insert: inserted.toString(),
+                    });
+                  },
+                );
+                onChangeRef.current({
+                  value: update.state.doc.toString(),
+                  changes,
+                });
               }
               if (update.selectionSet || update.docChanged) {
                 const main = update.state.selection.main;

@@ -28,17 +28,6 @@
   --font-mono:
     "Cascadia Code", "Cascadia Mono", Consolas, "Microsoft YaHei UI",
     monospace;
-  --mono: var(--font-mono);
-  --paper: var(--app-bg);
-  --paper-deep: var(--surface-subtle);
-  --ink: var(--text);
-  --muted: var(--text-muted);
-  --line: var(--border);
-  --green: var(--accent);
-  --green-bright: #d8e7fb;
-  --green-deep: var(--accent-strong);
-  --orange: var(--warning);
-  --white: var(--surface);
 }
 
 :root[data-theme="dark"] {
@@ -201,7 +190,7 @@ body.is-resizing * {
   background: var(--text);
   color: var(--surface);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -223,7 +212,7 @@ body.is-resizing * {
 
 .app-brand-copy span {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -285,7 +274,7 @@ body.is-resizing * {
   overflow: hidden;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -502,7 +491,7 @@ body.is-resizing * {
 .program-runner .runner-command-heading span,
 .program-runner .runner-editor-heading > div span {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.035em;
 }
@@ -559,7 +548,7 @@ body.is-resizing * {
   border-radius: 5px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .program-runner .runner-load-example:hover {
@@ -588,7 +577,7 @@ body.is-resizing * {
   gap: 6px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -618,7 +607,7 @@ body.is-resizing * {
   background: var(--surface-subtle);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -653,7 +642,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .program-runner .runner-parameter-sidebar-tools input:focus,
@@ -661,6 +650,66 @@ body.is-resizing * {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
   outline: 0;
+}
+
+.program-runner .runner-free-parameter-picker {
+  grid-column: 1 / -1;
+  position: relative;
+}
+
+.program-runner .runner-free-parameter-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  list-style: none;
+  height: 27px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.program-runner .runner-free-parameter-button::-webkit-details-marker {
+  display: none;
+}
+
+.program-runner .runner-free-parameter-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.program-runner .runner-free-parameter-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
+}
+
+.program-runner .runner-free-parameter-menu button {
+  height: 27px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.program-runner .runner-free-parameter-menu button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .program-runner .runner-file-list {
@@ -676,7 +725,7 @@ body.is-resizing * {
 .program-runner .runner-empty-small {
   margin: 8px;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -725,7 +774,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--accent);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -735,7 +784,7 @@ body.is-resizing * {
   overflow: hidden;
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 550;
   line-height: 14px;
   text-overflow: ellipsis;
@@ -744,7 +793,7 @@ body.is-resizing * {
 
 .program-runner .runner-file-select small {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 12px;
 }
 
@@ -811,7 +860,7 @@ body.is-resizing * {
 .program-runner .runner-editor-heading > div strong {
   max-width: min(62vw, 760px);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 550;
 }
 
@@ -823,7 +872,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .program-runner .runner-file-path-field {
@@ -840,7 +889,7 @@ body.is-resizing * {
   flex: 0 0 auto;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .program-runner .runner-file-path-field input {
@@ -853,7 +902,7 @@ body.is-resizing * {
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .program-runner .runner-file-path-field input:hover,
@@ -949,7 +998,7 @@ body.is-resizing * {
   border-radius: 5px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 550;
 }
 
@@ -991,7 +1040,7 @@ body.is-resizing * {
 .program-runner .runner-selection-bar > div:first-child span {
   flex: 0 0 auto;
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -1000,7 +1049,7 @@ body.is-resizing * {
   overflow: hidden;
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1010,7 +1059,7 @@ body.is-resizing * {
   max-width: 190px;
   overflow: hidden;
   color: var(--accent);
-  font-size: 9px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1018,7 +1067,7 @@ body.is-resizing * {
 .program-runner .runner-binding-context-hint {
   flex: 0 0 auto;
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -1044,7 +1093,7 @@ body.is-resizing * {
 
 .editor-context-menu-selection span {
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -1052,7 +1101,7 @@ body.is-resizing * {
   overflow: hidden;
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1067,7 +1116,7 @@ body.is-resizing * {
   border-radius: 5px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   text-align: left;
 }
 
@@ -1087,7 +1136,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--accent-strong);
   font-family: var(--font-mono);
-  font-size: 6px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1132,7 +1181,7 @@ body.is-resizing * {
   padding: 0 4px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1174,21 +1223,19 @@ body.is-resizing * {
 
 .program-runner .runner-field > span {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 550;
 }
 
 .program-runner .runner-field > small {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
 .program-runner .runner-field input,
 .program-runner .runner-field textarea,
-.program-runner .runner-field select,
-.program-runner .runner-parameter-filters select,
-.program-runner .runner-parameter-filters input {
+.program-runner .runner-field select {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--border);
@@ -1196,13 +1243,11 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .program-runner .runner-field input,
-.program-runner .runner-field select,
-.program-runner .runner-parameter-filters select,
-.program-runner .runner-parameter-filters input {
+.program-runner .runner-field select {
   height: 30px;
   padding: 0 8px;
 }
@@ -1216,17 +1261,13 @@ body.is-resizing * {
 
 .program-runner .runner-field input:hover,
 .program-runner .runner-field textarea:hover,
-.program-runner .runner-field select:hover,
-.program-runner .runner-parameter-filters input:hover,
-.program-runner .runner-parameter-filters select:hover {
+.program-runner .runner-field select:hover {
   border-color: var(--border-strong);
 }
 
 .program-runner .runner-field input:focus,
 .program-runner .runner-field textarea:focus,
-.program-runner .runner-field select:focus,
-.program-runner .runner-parameter-filters input:focus,
-.program-runner .runner-parameter-filters select:focus {
+.program-runner .runner-field select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
   outline: 0;
@@ -1261,7 +1302,7 @@ body.is-resizing * {
 .program-runner .runner-locator-heading small {
   max-width: 150px;
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.4;
   text-align: right;
 }
@@ -1303,13 +1344,13 @@ body.is-resizing * {
 .program-runner .runner-token-preview-heading span,
 .program-runner .runner-token-preview > small {
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
 .program-runner .runner-token-preview-heading strong {
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .program-runner .runner-mode-wide {
@@ -1319,7 +1360,7 @@ body.is-resizing * {
 .program-runner .runner-mode-hint {
   margin: 4px 0 12px;
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -1335,7 +1376,7 @@ body.is-resizing * {
   border-radius: 5px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .program-runner .runner-locator-edit-actions .runner-locator-apply {
@@ -1388,13 +1429,13 @@ body.is-resizing * {
 
 .program-runner .dock-title strong {
   color: var(--text);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .program-runner .dock-title small {
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .dock-run-state {
@@ -1408,69 +1449,6 @@ body.is-resizing * {
   background: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
   animation: run-pulse 1.4s ease-in-out infinite;
-}
-
-.program-runner .dock-tab-list {
-  display: flex;
-  height: 100%;
-  align-items: stretch;
-  gap: 2px;
-}
-
-.program-runner .dock-tab-list button {
-  position: relative;
-  display: flex;
-  height: 100%;
-  align-items: center;
-  gap: 7px;
-  padding: 0 11px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 550;
-}
-
-.program-runner .dock-tab-list button::after {
-  position: absolute;
-  right: 8px;
-  bottom: -1px;
-  left: 8px;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: transparent;
-  content: "";
-}
-
-.program-runner .dock-tab-list button:hover,
-.program-runner .dock-tab-list button.is-active {
-  color: var(--text);
-}
-
-.program-runner .dock-tab-list button.is-active::after {
-  background: var(--accent);
-}
-
-.program-runner .dock-tab-list button > span {
-  padding: 2px 5px;
-  border-radius: 999px;
-  background: var(--surface-subtle);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 500;
-}
-
-.program-runner .dock-tab-list button.is-running > span {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
-
-.program-runner .dock-summary {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-muted);
-  font-size: 9px;
 }
 
 .program-runner .dock-collapse-button {
@@ -1490,7 +1468,6 @@ body.is-resizing * {
   color: var(--text);
 }
 
-.program-runner .runner-parameter-panel,
 .program-runner .runner-command-area {
   height: var(--dock-height);
   min-height: 0;
@@ -1500,127 +1477,9 @@ body.is-resizing * {
   background: var(--surface);
 }
 
-.program-runner .runner-parameter-panel {
-  display: flex;
-  flex-direction: column;
-}
-
-.program-runner .runner-parameter-panel.is-panel-hidden,
 .program-runner .runner-command-area.is-panel-hidden,
-.program-runner.is-dock-collapsed .runner-parameter-panel,
 .program-runner.is-dock-collapsed .runner-command-area {
   display: none;
-}
-
-.program-runner .runner-parameter-toolbar {
-  display: flex;
-  min-height: 40px;
-  align-items: center;
-  gap: 12px;
-  padding: 5px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-subtle);
-}
-
-.program-runner .runner-parameter-title {
-  display: flex;
-  min-width: 205px;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.program-runner .runner-parameter-title small {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 8px;
-}
-
-.program-runner .runner-parameter-filters {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  gap: 6px;
-}
-
-.program-runner .runner-parameter-filters select {
-  width: 105px;
-  flex: 0 0 105px;
-}
-
-.program-runner .runner-parameter-filters input {
-  max-width: 340px;
-}
-
-.program-runner .runner-main-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.program-runner .runner-main-actions button {
-  display: inline-flex;
-  height: 29px;
-  align-items: center;
-  gap: 6px;
-  padding: 0 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: 9px;
-  font-weight: 550;
-  white-space: nowrap;
-}
-
-.program-runner .runner-main-actions .runner-prepare-button {
-  border-color: var(--accent-strong);
-  background: var(--accent-strong);
-  color: #ffffff;
-}
-
-.program-runner .runner-main-actions button:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-.program-runner .runner-main-actions .runner-prepare-button:hover:not(:disabled) {
-  color: #ffffff;
-}
-
-.program-runner .runner-parameter-workspace {
-  display: grid;
-  min-height: 0;
-  flex: 1;
-  grid-template-columns: minmax(250px, 34%) minmax(0, 1fr);
-  overflow: hidden;
-}
-
-.program-runner .runner-parameter-tree {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
-  background: var(--surface-subtle);
-}
-
-.program-runner .runner-parameter-tree-title {
-  display: flex;
-  min-height: 32px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.program-runner .runner-parameter-tree-title strong {
-  color: var(--text);
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.program-runner .runner-parameter-tree-title small {
-  color: var(--text-muted);
-  font-size: 8px;
 }
 
 .program-runner .runner-parameter-tree-body {
@@ -1671,7 +1530,7 @@ body.is-resizing * {
   flex: 1;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1681,7 +1540,7 @@ body.is-resizing * {
   flex: 0 0 auto;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .tree-chevron {
@@ -1720,7 +1579,7 @@ body.is-resizing * {
 
 .program-runner .runner-parameter-direction-node strong {
   flex: 1;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1730,7 +1589,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 11px;
 }
 
 .tree-direction-mark {
@@ -1743,7 +1602,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--accent-strong);
   font-family: var(--font-mono);
-  font-size: 6px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1774,7 +1633,7 @@ body.is-resizing * {
   padding: 2px 7px 2px 4px;
   border-radius: 4px;
   color: var(--text-secondary);
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .program-runner .runner-binding > span:last-child {
@@ -1792,6 +1651,17 @@ body.is-resizing * {
 
 .program-runner .runner-binding.has-error {
   background: var(--danger-soft);
+}
+
+.program-runner .runner-binding.has-locator-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.program-runner
+  .runner-binding.has-locator-error
+  .tree-parameter-glyph {
+  color: var(--danger);
 }
 
 .tree-parameter-glyph {
@@ -1833,7 +1703,7 @@ body.is-resizing * {
 
 .program-runner .runner-property-heading span:first-child {
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1851,7 +1721,7 @@ body.is-resizing * {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -1884,7 +1754,7 @@ body.is-resizing * {
 
 .program-runner .runner-property-field > span {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1899,7 +1769,7 @@ body.is-resizing * {
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .program-runner .runner-property-field input,
@@ -1936,7 +1806,13 @@ body.is-resizing * {
 
 .program-runner .runner-property-error {
   color: var(--danger);
-  font-size: 8px;
+  font-size: 11px;
+}
+
+.program-runner .runner-property-help {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .program-runner .runner-property-readonly {
@@ -1982,7 +1858,14 @@ body.is-resizing * {
 
 .program-runner .runner-property-locator-summary-heading .runner-binding-meta {
   flex: 1;
-  font-size: 9px;
+  font-size: 11px;
+}
+
+.program-runner
+  .runner-property-locator-summary-heading
+  .runner-binding-meta.is-invalid {
+  color: var(--danger);
+  font-weight: 650;
 }
 
 .program-runner .runner-property-locator-details {
@@ -1998,21 +1881,21 @@ body.is-resizing * {
 
 .program-runner .runner-property-locator-details dt {
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .program-runner .runner-property-locator-details dd {
   overflow: hidden;
   margin: 1px 0 0;
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .program-runner .runner-property-locator .runner-binding-meta {
   flex: 1;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .program-runner .runner-property-locator button,
@@ -2024,7 +1907,7 @@ body.is-resizing * {
   border-radius: 4px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -2067,7 +1950,7 @@ body.is-resizing * {
 .program-runner .runner-parameter-property-empty p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .program-runner .runner-parameter-empty {
@@ -2077,7 +1960,7 @@ body.is-resizing * {
   margin: 0;
   padding: 10px;
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   text-align: center;
 }
 
@@ -2105,7 +1988,7 @@ body.is-resizing * {
 
 .program-runner .runner-command-heading small {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .program-runner .runner-command-area > pre {
@@ -2119,7 +2002,7 @@ body.is-resizing * {
   background: var(--code-bg);
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -2139,22 +2022,12 @@ body.is-resizing * {
   border-radius: 5px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 9px;
-}
-
-.program-runner .runner-command-actions .runner-run-button {
-  border-color: var(--accent-strong);
-  background: var(--accent-strong);
-  color: #ffffff;
+  font-size: 11px;
 }
 
 .program-runner .runner-command-actions button:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--text);
-}
-
-.program-runner .runner-command-actions .runner-run-button:hover:not(:disabled) {
-  color: #ffffff;
 }
 
 .program-runner .runner-runtime {
@@ -2167,8 +2040,7 @@ body.is-resizing * {
   background: var(--surface-subtle);
 }
 
-.program-runner .runner-runtime.is-failed,
-.program-runner .runner-runtime.is-timeout {
+.program-runner .runner-runtime.is-failed {
   border-left-color: var(--danger);
 }
 
@@ -2182,13 +2054,13 @@ body.is-resizing * {
 
 .program-runner .runner-runtime-heading strong {
   color: var(--text);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .program-runner .runner-runtime-heading span {
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .program-runner .runner-runtime-streams {
@@ -2208,7 +2080,7 @@ body.is-resizing * {
   background: var(--code-bg);
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -2252,7 +2124,7 @@ body.is-resizing * {
 .runner-run-empty p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 @keyframes run-pulse {
@@ -2274,7 +2146,7 @@ body.is-resizing * {
   background: var(--surface-subtle);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .status-mode {
@@ -2343,7 +2215,7 @@ body.is-resizing * {
   border-radius: 50%;
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2361,7 +2233,7 @@ body.is-resizing * {
   flex: 1;
   margin: 2px 0 0;
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -2446,7 +2318,7 @@ body.is-resizing * {
   border-radius: 5px;
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .confirm-dialog-actions .is-danger {
@@ -2521,10 +2393,6 @@ body.is-resizing * {
     display: none;
   }
 
-  .program-runner .dock-summary span:nth-child(2),
-  .program-runner .dock-summary span:nth-child(3) {
-    display: none;
-  }
 }
 
 @media (max-width: 880px) {
@@ -2535,21 +2403,6 @@ body.is-resizing * {
   .program-runner .runner-files,
   .program-runner .pane-resizer-left {
     display: none;
-  }
-
-  .program-runner .runner-parameter-toolbar {
-    flex-wrap: wrap;
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
-
-  .program-runner .runner-parameter-filters {
-    order: 3;
-    flex-basis: 100%;
-  }
-
-  .program-runner .runner-parameter-filters input {
-    max-width: none;
   }
 
   .program-runner .runner-runtime-streams {

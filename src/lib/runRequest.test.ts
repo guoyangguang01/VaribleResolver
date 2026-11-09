@@ -6,17 +6,25 @@ import {
   RUN_REQUEST_VERSION,
 } from "./runRequest.ts";
 
-test("parses binding ID and name input overrides", () => {
+test("parses file name and parameter name input overrides", () => {
   const overrides = parseRunRequest({
     schema: RUN_REQUEST_SCHEMA,
     schemaVersion: RUN_REQUEST_VERSION,
     overrides: [
       {
-        selector: { type: "bindingId", id: "parameter-id" },
+        selector: {
+          type: "parameter",
+          fileName: "case.ccl",
+          parameterName: "温度",
+        },
         value: "20",
       },
       {
-        selector: { type: "name", name: "入口温度" },
+        selector: {
+          type: "parameter",
+          fileName: "CFX1",
+          parameterName: "入口温度",
+        },
         value: "550",
       },
     ],
@@ -24,13 +32,13 @@ test("parses binding ID and name input overrides", () => {
 
   assert.deepEqual(overrides, [
     {
-      target: "bindingId",
-      bindingId: "parameter-id",
+      fileName: "case.ccl",
+      parameterName: "温度",
       value: "20",
     },
     {
-      target: "name",
-      name: "入口温度",
+      fileName: "CFX1",
+      parameterName: "入口温度",
       value: "550",
     },
   ]);
@@ -58,7 +66,25 @@ test("rejects invalid run request selectors and values", () => {
         schemaVersion: RUN_REQUEST_VERSION,
         overrides: [
           {
-            selector: { type: "bindingId", id: "parameter-id" },
+            selector: { type: "bindingId", id: "legacy-id" },
+            value: "1",
+          },
+        ],
+      }),
+    /选择器类型无效/,
+  );
+  assert.throws(
+    () =>
+      parseRunRequest({
+        schema: RUN_REQUEST_SCHEMA,
+        schemaVersion: RUN_REQUEST_VERSION,
+        overrides: [
+          {
+            selector: {
+              type: "parameter",
+              fileName: "case.ccl",
+              parameterName: "温度",
+            },
             value: 1,
           },
         ],

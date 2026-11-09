@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("programStudio", {
   saveProject: (payload, options) =>
     ipcRenderer.invoke("client:save-project", payload, options),
   openProject: () => ipcRenderer.invoke("client:open-project"),
+  createRunWorkspace: (projectPath) =>
+    ipcRenderer.invoke("client:create-run-workspace", projectPath),
   runProgram: (request) =>
     ipcRenderer.invoke("client:run-program", request),
   setDirty: (dirty) => ipcRenderer.send("client:set-dirty", Boolean(dirty)),

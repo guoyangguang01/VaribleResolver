@@ -3,27 +3,10 @@ import type {
   ProjectProgramRequest,
   ProjectProgramResult,
 } from "./projectExecution.ts";
+import { assertInsideRoot } from "../../electron/projectPaths.js";
 
 export interface DesktopExecutionAdapterOptions {
   writableRoot?: string;
-}
-
-function normalizePath(value: string): string {
-  return value
-    .replace(/\\/g, "/")
-    .replace(/\/+$/, "")
-    .toLowerCase();
-}
-
-function assertInsideRoot(
-  targetPath: string,
-  rootPath: string,
-): void {
-  const root = normalizePath(rootPath);
-  const target = normalizePath(targetPath);
-  if (target !== root && !target.startsWith(`${root}/`)) {
-    throw new Error(`路径不在生成工程内：${targetPath}`);
-  }
 }
 
 export function createDesktopExecutionAdapter(
@@ -36,7 +19,11 @@ export function createDesktopExecutionAdapter(
   return {
     async readFile(filePath) {
       if (writableRoot) {
-        assertInsideRoot(filePath, writableRoot);
+        assertInsideRoot(
+          filePath,
+          writableRoot,
+          `路径不在生成工程内：${filePath}`,
+        );
       }
       const [file] = await api.readFiles([filePath]);
       return file
@@ -46,20 +33,29 @@ export function createDesktopExecutionAdapter(
     writeFiles(files) {
       if (writableRoot) {
         for (const file of files) {
-          assertInsideRoot(file.path, writableRoot);
+          assertInsideRoot(
+            file.path,
+            writableRoot,
+            `路径不在生成工程内：${file.path}`,
+          );
         }
       }
       return api.writeFiles(files);
     },
     async runProgram(request: ProjectProgramRequest) {
       if (request.cwd && writableRoot) {
-        assertInsideRoot(request.cwd, writableRoot);
+        assertInsideRoot(
+          request.cwd,
+          writableRoot,
+          `路径不在生成工程内：${request.cwd}`,
+        );
       }
       return api.runProgram({
+        mode: request.mode,
         program: request.program,
         args: request.args,
         cwd: request.cwd,
-        timeoutMs: request.timeoutMs,
+        environment: request.environment,
       }) as Promise<ProjectProgramResult>;
     },
   };

@@ -56,6 +56,7 @@ export interface Fa1Example {
   program: string;
   arguments: string;
   workingDirectory: string;
+  launchMode?: "direct" | "shell";
   files: LaunchFile[];
   bindings: LaunchBinding[];
 }
@@ -104,10 +105,10 @@ export function buildFa1Example(): Fa1Example {
       "C:\\Cases\\fa1\\Stress_Envelope_Summary.txt",
   };
   let freeParameterIndex = 0;
-  const bindings = fa1Config.parameters.map((parameter, index) => {
+  const bindings = fa1Config.parameters.map((parameter) => {
     const direction =
       parameter.direction === 0 ? "input" : "output";
-    const name = `${parameter.moduleName} · ${parameter.name}`;
+    const name = parameter.name;
     if (parameter.moduleName === "自由参数") {
       const file = filesByPath.get("C:\\Cases\\fa1\\ResultManifest.txt");
       if (!file) throw new Error("示例自由参数清单不存在。");
@@ -121,7 +122,6 @@ export function buildFa1Example(): Fa1Example {
             fieldIndex: 1,
           }),
           direction,
-          `fa1-${direction}-${index}`,
           name,
         ),
         parameterType: fa1ParameterType(parameter.dataType),
@@ -139,7 +139,6 @@ export function buildFa1Example(): Fa1Example {
         file,
         parameter,
         direction,
-        `fa1-${direction}-${index}`,
         name,
       ),
       parameterType: fa1ParameterType(parameter.dataType),
@@ -153,6 +152,7 @@ export function buildFa1Example(): Fa1Example {
     program: config.program,
     arguments: config.arguments,
     workingDirectory: config.workingDirectory,
+    launchMode: "direct",
     files,
     bindings,
   };

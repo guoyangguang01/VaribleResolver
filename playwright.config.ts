@@ -9,19 +9,6 @@ export default defineConfig({
     timeout: 5_000,
   },
   use: {
-    baseURL: "http://127.0.0.1:4173",
-    channel: "msedge",
-    headless: true,
-    launchOptions: {
-      args: [
-        "--disable-background-networking",
-        "--disable-component-update",
-        "--disable-extensions",
-        "--disable-sync",
-        "--no-default-browser-check",
-        "--no-first-run",
-      ],
-    },
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },

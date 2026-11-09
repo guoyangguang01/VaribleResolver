@@ -10,7 +10,10 @@ import {
   createLocatorForMode,
   extractOutputBindings,
   inferParameterType,
+  interpolateArguments,
   parseCommandArguments,
+  parameterKey,
+  resolveInputReferences,
   resolveLaunchBinding,
   tokenizeSpecialCharacters,
   validateParameterValue,
@@ -39,7 +42,6 @@ function selectedBinding(
     sourceFile,
     { start, end: start + selected.length },
     direction,
-    `binding-${direction}-${occurrence}`,
   );
 }
 
@@ -189,7 +191,6 @@ test("writes and extracts values through fa1-style row and column positions", ()
       endColumnIndex: 32,
     },
     "output",
-    "global-max",
     "全局最大应力",
   );
   const updatedFile = {
@@ -217,7 +218,6 @@ test("locates unit parameters through their own row and column range", () => {
       endColumnIndex: unitColumn + 1,
     },
     "input",
-    "temperature-unit",
     "入口温度单位",
   );
   const result = writeInputBindings(
@@ -244,7 +244,6 @@ test("extracts and writes a JSON path value without disturbing the document", ()
       jsonPath: "$.results[0].maximum",
     }),
     "input",
-    "json-max",
     "maximum",
   );
   const result = writeInputBindings(
@@ -274,7 +273,6 @@ test("writes a JSON string path as a quoted JSON string", () => {
       jsonPath: "$.material",
     }),
     "input",
-    "json-material",
     "material",
   );
   const result = writeInputBindings(
@@ -296,7 +294,6 @@ test("extracts and writes XML attributes and text by XML path", () => {
       xmlPath: "/root/result[1]/@maximum",
     }),
     "input",
-    "xml-maximum",
     "maximum",
   );
   const written = writeInputBindings(
@@ -336,7 +333,6 @@ test("supports delimiter, marker, line, and regex locator modes", () => {
       fieldIndex: 1,
     }),
     "input",
-    "field",
     "value",
   );
   const marker = createBindingFromLocator(
@@ -346,7 +342,6 @@ test("supports delimiter, marker, line, and regex locator modes", () => {
       endMarker: "END",
     }),
     "output",
-    "marker",
     "marker",
   );
   const wholeLine = createLocatorForMode("wholeLine", {
@@ -363,7 +358,6 @@ test("supports delimiter, marker, line, and regex locator modes", () => {
       captureGroup: 1,
     }),
     "output",
-    "pattern",
     "pattern value",
   );
 
@@ -472,6 +466,49 @@ test("extracts an output value from its fixed coordinate range", () => {
   );
 });
 
+test("supports manual and referenced free output parameters", () => {
+  const sourceFile = file("result.txt", "maximum = 12.5\n");
+  const bound = createBindingFromLocator(
+    sourceFile,
+    createLocatorForMode("pattern", {
+      pattern: "maximum\\s*=\\s*([0-9.]+)",
+      captureGroup: 1,
+    }),
+    "output",
+    "最大值",
+  );
+  const referenced: LaunchBinding = {
+    scope: "free",
+    name: "引用最大值",
+    direction: "output",
+    outputReference: "@result[Out].最大值",
+    value: "",
+    parameterType: "number",
+    defaultValue: "",
+    unit: "",
+    description: "",
+  };
+  const manual: LaunchBinding = {
+    scope: "free",
+    name: "手动结果",
+    direction: "output",
+    value: "fallback",
+    parameterType: "text",
+    defaultValue: "",
+    unit: "",
+    description: "",
+  };
+
+  const outputs = extractOutputBindings(
+    [sourceFile],
+    [bound, referenced, manual],
+  );
+  assert.equal(outputs[0].value, "12.5");
+  assert.equal(outputs[1].value, "12.5");
+  assert.equal(outputs[1].error, null);
+  assert.equal(outputs[2].value, "fallback");
+});
+
 test("keeps the selected row when repeated text appears on other lines", () => {
   const sourceFile = file(
     "repeated.log",
@@ -494,7 +531,6 @@ test("reports an invalid row instead of guessing another location", () => {
     "VALUE = 1\nVALUE = 2\n",
   );
   const binding: LaunchBinding = {
-    id: "ambiguous",
     name: "value",
     direction: "output",
     filePath: sourceFile.path,
@@ -525,11 +561,11 @@ test("parses quoted arguments, interpolates parameters, and builds a command", (
     value: "careful mode",
   };
   const args = parseCommandArguments(
-    '--input "case one.ccl" --mode {{mode}}',
+    '--input "case one.ccl" --mode @config[In].mode',
   );
   const command = buildLaunchCommand(
     "C:\\Tools\\solver.exe",
-    '--input "case one.ccl" --mode {{mode}}',
+    '--input "case one.ccl" --mode @config[In].mode',
     [binding],
   );
 
@@ -537,7 +573,7 @@ test("parses quoted arguments, interpolates parameters, and builds a command", (
     "--input",
     "case one.ccl",
     "--mode",
-    "{{mode}}",
+    "@config[In].mode",
   ]);
   assert.equal(
     command,
@@ -549,6 +585,107 @@ test("reports an unclosed argument quote", () => {
   assert.throws(
     () => parseCommandArguments('--name "unfinished'),
     /未闭合/,
+  );
+});
+
+test("rejects the legacy brace syntax and unresolved @ references", () => {
+  const sourceFile = file("config.ccl", "mode = fast");
+  const binding = {
+    ...selectedBinding(sourceFile, "fast", "input"),
+    name: "mode",
+  };
+  assert.throws(
+    () => interpolateArguments(["{{mode}}"], [binding]),
+    /只支持 @文件名\[In\]\.参数名/,
+  );
+  assert.throws(
+    () => interpolateArguments(["@missing[In].mode"], [binding]),
+    /未找到输入参数/,
+  );
+});
+
+test("resolves input references and interpolates @ parameter aliases", () => {
+  const primaryFile = file("primary.txt", "temperature = 550\n");
+  const aliasFile = file("alias.txt", "temperature = 550\n");
+  const primary = {
+    ...selectedBinding(primaryFile, "550", "input"),
+    name: "入口温度",
+    value: "600",
+  };
+  const alias = {
+    ...selectedBinding(aliasFile, "550", "input"),
+    name: "副本温度",
+    value: "0",
+    inputReference: "@primary[In].入口温度",
+  };
+
+  const resolution = resolveInputReferences([primary, alias]);
+  assert.equal(resolution.errors.size, 0);
+  assert.equal(
+    resolution.roots.get(parameterKey(alias)) &&
+      parameterKey(resolution.roots.get(parameterKey(alias))!),
+    parameterKey(primary),
+  );
+  assert.deepEqual(
+    parseCommandArguments(
+      "--primary @primary[In].入口温度 --alias=@alias.txt[In].副本温度",
+    ).map((argument) =>
+      interpolateArguments([argument], [primary, alias])[0],
+    ),
+    ["--primary", "600", "--alias=600"],
+  );
+  assert.deepEqual(
+    interpolateArguments(["@id:alias"], [primary, alias]),
+    ["@id:alias"],
+  );
+});
+
+test("reports input reference cycles and type mismatches", () => {
+  const firstFile = file("first.txt", "a = 1\n");
+  const secondFile = file("second.txt", "b = 1\n");
+  const first = {
+    ...selectedBinding(firstFile, "1", "input"),
+    name: "A",
+    inputReference: "@second[In].B",
+  };
+  const second = {
+    ...selectedBinding(secondFile, "1", "input"),
+    name: "B",
+    inputReference: "@first[In].A",
+  };
+  const cycle = resolveInputReferences([first, second]);
+  assert.match([...cycle.errors.values()][0] ?? "", /循环引用/);
+
+  const boolAlias = {
+    ...selectedBinding(secondFile, "1", "input"),
+    name: "布尔副本",
+    parameterType: "boolean" as const,
+    inputReference: "@first[In].A",
+  };
+  const mismatch = resolveInputReferences([
+    {
+      ...first,
+      inputReference: undefined,
+    },
+    boolAlias,
+  ]);
+  assert.match([...mismatch.errors.values()][0] ?? "", /类型不一致/);
+});
+
+test("interpolates a free parameter without a file binding", () => {
+  const free: LaunchBinding = {
+    scope: "free",
+    name: "材料",
+    direction: "input",
+    value: "steel",
+    parameterType: "text",
+    defaultValue: "steel",
+    unit: "",
+    description: "",
+  };
+  assert.deepEqual(
+    interpolateArguments(["--material", "@自由参数[In].材料"], [free]),
+    ["--material", "steel"],
   );
 });
 
@@ -573,6 +710,23 @@ test("infers and validates parameter types before writing inputs", () => {
   };
   const result = writeInputBindings(sourceFile.content, [binding]);
 
-  assert.equal(result.writtenBindingIds.length, 0);
+  assert.equal(result.writtenParameterKeys.length, 0);
   assert.match(result.errors[0]?.message ?? "", /有效数值/);
+});
+
+test("validates the four base parameter types", () => {
+  assert.equal(validateParameterValue("number", "12.5"), null);
+  assert.equal(validateParameterValue("boolean", "TRUE"), null);
+  assert.equal(validateParameterValue("path", "inputs/case.ccl"), null);
+  assert.equal(validateParameterValue("text", "any text"), null);
+  assert.match(validateParameterValue("path", "") ?? "", /不能为空/);
+  const sourceFile = file("boolean.txt", "enabled = true\n");
+  const binding = {
+    ...selectedBinding(sourceFile, "true", "input"),
+    value: "true",
+    parameterType: "boolean" as const,
+  };
+  const result = writeInputBindings(sourceFile.content, [binding]);
+  assert.equal(result.source, "enabled = true\n");
+  assert.equal(result.errors.length, 0);
 });

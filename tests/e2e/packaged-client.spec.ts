@@ -16,9 +16,9 @@ test("packaged client renders the program workspace", async () => {
     const page = await app.firstWindow();
     await expect(page).toHaveTitle(/Program Studio/);
     await expect(
-      page.getByRole("heading", { name: "程序启动准备台" }),
+      page.getByText("本机程序工作台"),
     ).toBeVisible();
-    await expect(page.getByText("桌面客户端 · 本机路径读写")).toBeVisible();
+    await expect(page.locator("#program-runner")).toBeVisible();
   } finally {
     await app.close();
   }

@@ -1,9 +1,14 @@
 import {
+  FREE_PARAMETER_SCOPE,
   LauncherError,
   createLaunchFile,
   extractOutputBindings,
   interpolateArguments,
+  isFileBinding,
   parseCommandArguments,
+  parameterFileName,
+  parameterKey,
+  resolveInputReferences,
   resolveLaunchBinding,
   validateParameterValue,
   writeInputBindings,
@@ -17,19 +22,22 @@ export interface ProjectExecutionSnapshot {
   program: string;
   arguments: string;
   workingDirectory: string;
+  launchMode?: "direct" | "shell";
+  environment?: Record<string, string>;
   files: LaunchFile[];
   bindings: LaunchBinding[];
 }
 
 export interface ProjectProgramRequest {
+  mode: "direct" | "shell";
   program: string;
   args: string[];
   cwd?: string;
-  timeoutMs?: number;
+  environment?: Record<string, string>;
 }
 
 export interface ProjectProgramResult {
-  status: "completed" | "failed" | "timeout";
+  status: "completed" | "failed";
   exitCode: number | null;
   signal: string | null;
   error: string | null;
@@ -43,17 +51,11 @@ export interface ProjectExecutionReadFile {
   content: string;
 }
 
-export type ProjectInputOverride =
-  | {
-      target: "bindingId";
-      bindingId: string;
-      value: string;
-    }
-  | {
-      target: "name";
-      name: string;
-      value: string;
-    };
+export interface ProjectInputOverride {
+  fileName: string;
+  parameterName: string;
+  value: string;
+}
 
 export interface ProjectExecutionAdapter {
   readFile(
@@ -69,13 +71,12 @@ export interface ProjectExecutionRequest {
   snapshot: ProjectExecutionSnapshot;
   overrides?: ProjectInputOverride[];
   adapter: ProjectExecutionAdapter;
-  timeoutMs?: number;
 }
 
 export interface EffectiveInputValue {
-  bindingId: string;
+  parameterKey: string;
   name: string;
-  filePath: string;
+  filePath?: string;
   originalValue: string | null;
   requestedValue: string | null;
   effectiveValue: string;
@@ -100,7 +101,13 @@ function errorMessage(error: unknown): string {
 }
 
 function uniqueBindingPaths(bindings: LaunchBinding[]): string[] {
-  return [...new Set(bindings.map((binding) => binding.filePath))];
+  return [
+    ...new Set(
+      bindings.flatMap((binding) =>
+        isFileBinding(binding) ? [binding.filePath] : [],
+      ),
+    ),
+  ];
 }
 
 function snapshotFile(
@@ -121,67 +128,90 @@ function resolveInputOverrides(
   const inputs = snapshot.bindings.filter(
     (binding) => binding.direction === "input",
   );
-  const inputsById = new Map(
-    inputs.map((binding) => [binding.id, binding]),
-  );
-  const inputsByName = new Map<string, LaunchBinding[]>();
-  for (const binding of inputs) {
-    const matches = inputsByName.get(binding.name) ?? [];
-    matches.push(binding);
-    inputsByName.set(binding.name, matches);
+  const referenceResolution = resolveInputReferences(snapshot.bindings);
+  const referenceError = [...referenceResolution.errors.values()][0];
+  if (referenceError) {
+    throw new ProjectExecutionError(referenceError);
   }
+  const inputFileMatches = (
+    binding: LaunchBinding,
+    fileName: string,
+  ): boolean => {
+    if (!isFileBinding(binding)) {
+      return fileName.toLowerCase() === FREE_PARAMETER_SCOPE.toLowerCase();
+    }
+    const actualFileName = parameterFileName(binding.filePath);
+    const stem = actualFileName.replace(/\.[^.]+$/, "");
+    const requested = fileName.toLowerCase();
+    return (
+      actualFileName.toLowerCase() === requested ||
+      stem.toLowerCase() === requested
+    );
+  };
   const requestedValues = new Map<string, string>();
   const errors: string[] = [];
   for (const override of overrides) {
-    let binding: LaunchBinding | undefined;
-    let selector: string;
-    if (override.target === "bindingId") {
-      const bindingId = override.bindingId.trim();
-      selector = `绑定 ID“${bindingId}”`;
-      if (!bindingId) {
-        errors.push("绑定 ID 不能为空。");
-        continue;
-      }
-      binding = inputsById.get(bindingId);
-    } else {
-      const name = override.name.trim();
-      selector = `参数名“${name}”`;
-      if (!name) {
-        errors.push("参数名不能为空。");
-        continue;
-      }
-      const matches = inputsByName.get(name) ?? [];
-      if (matches.length > 1) {
-        errors.push(`${selector}对应多个输入绑定，请改用绑定 ID。`);
-        continue;
-      }
-      binding = matches[0];
+    const fileName = override.fileName.trim();
+    const parameterName = override.parameterName.trim();
+    const selector = `参数“${fileName}.${parameterName}”`;
+    if (!fileName || !parameterName) {
+      errors.push("文件名和参数名不能为空。");
+      continue;
     }
+    const matches = inputs.filter(
+      (binding) =>
+        binding.name === parameterName &&
+        inputFileMatches(binding, fileName),
+    );
+    if (matches.length > 1) {
+      errors.push(
+        `${selector}对应多个输入绑定，请确认文件名和参数名唯一。`,
+      );
+      continue;
+    }
+    const binding = matches[0];
     if (!binding) {
-      const otherDirection = snapshot.bindings.find((candidate) =>
-        override.target === "bindingId"
-          ? candidate.id === override.bindingId.trim()
-          : candidate.name === override.name.trim(),
+      const otherDirection = snapshot.bindings.find(
+        (candidate) =>
+          candidate.direction !== "input" &&
+          candidate.name === parameterName &&
+          inputFileMatches(candidate, fileName),
       );
       errors.push(
         otherDirection
-          ? `${selector}是${otherDirection.direction === "output" ? "输出" : "非输入"}参数，不能覆盖。`
+          ? `${selector}是输出参数，不能覆盖。`
           : `未找到可覆盖的输入参数${selector}。`,
       );
       continue;
     }
-    if (requestedValues.has(binding.id)) {
+    const bindingKey = parameterKey(binding);
+    const root = referenceResolution.roots.get(bindingKey);
+    if (!root) {
+      errors.push(`${selector}无法解析所引用的输入参数。`);
+      continue;
+    }
+    const rootKey = parameterKey(root);
+    if (rootKey !== bindingKey) {
+      errors.push(
+        `${selector}是引用参数，请改为覆盖主参数“${root.name}”。`,
+      );
+      continue;
+    }
+    if (requestedValues.has(rootKey)) {
       errors.push(`${selector}对应的输入参数被重复覆盖。`);
       continue;
     }
 
     const value = String(override.value);
-    const valueError = validateParameterValue(binding.parameterType, value);
+    const valueError = validateParameterValue(
+      binding.parameterType,
+      value,
+    );
     if (valueError) {
       errors.push(`参数“${binding.name}”${valueError}`);
       continue;
     }
-    requestedValues.set(binding.id, value);
+    requestedValues.set(rootKey, value);
   }
 
   if (errors.length > 0) {
@@ -189,18 +219,34 @@ function resolveInputOverrides(
   }
 
   const effectiveBindings = snapshot.bindings.map((binding) => {
-    const requestedValue = requestedValues.get(binding.id);
-    return requestedValue === undefined
+    if (binding.direction === "output") return binding;
+    const root = referenceResolution.roots.get(parameterKey(binding));
+    if (!root) return binding;
+    const rootKey = parameterKey(root);
+    const requestedValue = requestedValues.get(rootKey);
+    if (requestedValue !== undefined) {
+      return { ...binding, value: requestedValue };
+    }
+    return rootKey === parameterKey(binding)
       ? binding
-      : { ...binding, value: requestedValue };
+      : { ...binding, value: root.value };
   });
+  const effectiveRequestedValues = new Map(
+    effectiveBindings.flatMap((binding) => {
+      if (binding.direction !== "input") return [];
+      const root = referenceResolution.roots.get(parameterKey(binding));
+      return root && requestedValues.has(parameterKey(root))
+        ? [[parameterKey(binding), binding.value] as const]
+        : [];
+    }),
+  );
 
   return {
     bindings: effectiveBindings,
-    targets: inputs.filter((binding) =>
-      requestedValues.has(binding.id),
+    targets: effectiveBindings.filter((binding) =>
+      effectiveRequestedValues.has(parameterKey(binding)),
     ),
-    requestedValues,
+    requestedValues: effectiveRequestedValues,
   };
 }
 
@@ -213,26 +259,33 @@ function describeEffectiveInputs(
     sourceFiles.map((file) => [file.path, file]),
   );
   return targets.map((binding) => {
-    const requestedValue = requestedValues.get(binding.id) ?? "";
-    const file = filesByPath.get(binding.filePath);
+    const requestedValue =
+      requestedValues.get(parameterKey(binding)) ?? "";
+    const file = isFileBinding(binding)
+      ? filesByPath.get(binding.filePath)
+      : null;
     let originalValue: string | null = null;
-    try {
-      if (!file) {
-        throw new LauncherError(
-          `输入文件不存在：${binding.filePath}`,
-        );
+    if (isFileBinding(binding)) {
+      try {
+        if (!file) {
+          throw new LauncherError(
+            `输入文件不存在：${binding.filePath}`,
+          );
+        }
+        originalValue = resolveLaunchBinding(
+          file.content,
+          binding.locator,
+        ).value;
+      } catch {
+        originalValue = null;
       }
-      originalValue = resolveLaunchBinding(
-        file.content,
-        binding.locator,
-      ).value;
-    } catch {
-      originalValue = null;
     }
     return {
-      bindingId: binding.id,
+      parameterKey: parameterKey(binding),
       name: binding.name,
-      filePath: binding.filePath,
+      ...(isFileBinding(binding)
+        ? { filePath: binding.filePath }
+        : {}),
       originalValue,
       requestedValue,
       effectiveValue: requestedValue,
@@ -245,7 +298,7 @@ function describeEffectiveInputs(
 function prepareInputWrites(
   sourceFiles: LaunchFile[],
   bindings: LaunchBinding[],
-  targetBindingIds: Set<string>,
+  targetParameterKeys: Set<string>,
 ): {
   writes: Array<{ path: string; content: string }>;
   bindings: LaunchBinding[];
@@ -257,7 +310,8 @@ function prepareInputWrites(
   for (const binding of bindings) {
     if (
       binding.direction === "input" &&
-      targetBindingIds.has(binding.id) &&
+      isFileBinding(binding) &&
+      targetParameterKeys.has(parameterKey(binding)) &&
       !sourceByPath.has(binding.filePath)
     ) {
       errors.push(`参数“${binding.name}”引用的文件不存在。`);
@@ -271,14 +325,16 @@ function prepareInputWrites(
       (binding) =>
         binding.filePath === file.path &&
         binding.direction === "input" &&
-        targetBindingIds.has(binding.id),
+        isFileBinding(binding) &&
+        targetParameterKeys.has(parameterKey(binding)),
     );
     if (localBindings.length === 0) continue;
     const result = writeInputBindings(file.content, localBindings);
     if (result.errors.length > 0) {
       for (const error of result.errors) {
         const binding = bindings.find(
-          (candidate) => candidate.id === error.bindingId,
+          (candidate) =>
+            parameterKey(candidate) === error.parameterKey,
         );
         errors.push(
           `${file.name} / ${binding?.name ?? "参数"}：${error.message}`,
@@ -290,10 +346,10 @@ function prepareInputWrites(
       writes.push({ path: file.path, content: result.source });
     }
     const updatedById = new Map(
-      result.bindings.map((binding) => [binding.id, binding]),
+      result.bindings.map((binding) => [parameterKey(binding), binding]),
     );
     updatedBindings = updatedBindings.map(
-      (binding) => updatedById.get(binding.id) ?? binding,
+      (binding) => updatedById.get(parameterKey(binding)) ?? binding,
     );
   }
 
@@ -339,7 +395,6 @@ export async function executeProjectWithOverrides(
     snapshot,
     adapter,
     overrides = [],
-    timeoutMs = 10 * 60 * 1000,
   } = request;
   if (!snapshot.program.trim()) {
     throw new ProjectExecutionError("程序路径不能为空。");
@@ -387,7 +442,7 @@ export async function executeProjectWithOverrides(
     prepared = prepareInputWrites(
       sourceFiles,
       resolvedOverrides.bindings,
-      new Set(resolvedOverrides.targets.map((binding) => binding.id)),
+      new Set(resolvedOverrides.targets.map(parameterKey)),
     );
     args = interpolateArguments(
       parseCommandArguments(snapshot.arguments),
@@ -415,10 +470,11 @@ export async function executeProjectWithOverrides(
   const startedAt = Date.now();
   try {
     runtime = await adapter.runProgram({
+      mode: snapshot.launchMode ?? "direct",
       program: snapshot.program.trim(),
       args,
       cwd: snapshot.workingDirectory.trim() || undefined,
-      timeoutMs,
+      environment: snapshot.environment,
     });
   } catch (error) {
     runtime = {
@@ -442,7 +498,9 @@ export async function executeProjectWithOverrides(
     after.files,
     snapshot.bindings,
   ).map((output) => {
-    const readError = after.readErrors.get(output.filePath);
+    const readError = output.filePath
+      ? after.readErrors.get(output.filePath)
+      : undefined;
     return readError
       ? { ...output, value: null, range: null, error: readError }
       : output;

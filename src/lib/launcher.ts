@@ -124,7 +124,166 @@ export const LAUNCH_PARAMETER_TYPES = [
 export type LaunchParameterType =
   (typeof LAUNCH_PARAMETER_TYPES)[number];
 
+export interface InputReferenceResolution {
+  roots: Map<string, LaunchBinding>;
+  errors: Map<string, string>;
+}
+
 const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function inputFilePath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, "/");
+  return normalized.slice(normalized.lastIndexOf("/") + 1);
+}
+
+function inputFileStem(filePath: string): string {
+  const fileName = inputFilePath(filePath);
+  const separator = fileName.lastIndexOf(".");
+  return separator > 0 ? fileName.slice(0, separator) : fileName;
+}
+
+interface ParsedParameterReference {
+  fileName: string;
+  direction: "input" | "output";
+  parameterName: string;
+}
+
+function parseParameterReference(
+  value: string,
+): ParsedParameterReference | null {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("@")) return null;
+  const expression = trimmed.slice(1).trim();
+  const match = /^(.+)\[(in|out)\]\.(.+)$/i.exec(expression);
+  if (!match) return null;
+  const fileName = match[1].trim();
+  const parameterName = match[3].trim();
+  if (!fileName || !parameterName) return null;
+  return {
+    fileName,
+    direction: match[2].toLowerCase() === "in" ? "input" : "output",
+    parameterName,
+  };
+}
+
+function referencedInputBindings(
+  reference: string,
+  bindings: LaunchBinding[],
+): LaunchBinding[] {
+  const parsed = parseParameterReference(reference);
+  if (!parsed || parsed.direction !== "input") return [];
+  const fileName = parsed.fileName.toLowerCase();
+  const parameterName = parsed.parameterName;
+  return bindings.filter(
+    (binding) =>
+      binding.direction === "input" &&
+      binding.name === parameterName &&
+      (binding.scope === "free"
+        ? FREE_PARAMETER_SCOPE.toLowerCase() === fileName
+        : inputFilePath(binding.filePath).toLowerCase() === fileName ||
+          inputFileStem(binding.filePath).toLowerCase() === fileName),
+  );
+}
+
+function referencedOutputBindings(
+  reference: string,
+  bindings: LaunchBinding[],
+): FileLaunchBinding[] {
+  const parsed = parseParameterReference(reference);
+  if (!parsed || parsed.direction !== "output") return [];
+  const fileName = parsed.fileName.toLowerCase();
+  const parameterName = parsed.parameterName;
+  return bindings.filter(
+    (binding): binding is FileLaunchBinding =>
+      binding.direction === "output" &&
+      isFileBinding(binding) &&
+      binding.name === parameterName &&
+      (inputFilePath(binding.filePath).toLowerCase() === fileName ||
+        inputFileStem(binding.filePath).toLowerCase() === fileName),
+  );
+}
+
+export function resolveInputReferences(
+  bindings: LaunchBinding[],
+): InputReferenceResolution {
+  const inputs = bindings.filter(
+    (binding) => binding.direction === "input",
+  );
+  const roots = new Map<string, LaunchBinding>();
+  const errors = new Map<string, string>();
+  for (const binding of inputs) {
+    if (!binding.inputReference?.trim()) {
+      roots.set(parameterKey(binding), binding);
+      continue;
+    }
+    const path: LaunchBinding[] = [];
+    const visited = new Set<string>();
+    let current: LaunchBinding | undefined = binding;
+    while (current) {
+      const currentKey = parameterKey(current);
+      if (visited.has(currentKey)) {
+        errors.set(
+          parameterKey(binding),
+          `参数“${binding.name}”存在循环引用。`,
+        );
+        break;
+      }
+      visited.add(currentKey);
+      path.push(current);
+      if (!current.inputReference?.trim()) {
+        for (const pathBinding of path) {
+          roots.set(parameterKey(pathBinding), current);
+        }
+        break;
+      }
+      const reference = parseParameterReference(current.inputReference);
+      if (!reference || reference.direction !== "input") {
+        errors.set(
+          parameterKey(binding),
+          `参数“${current.name}”的引用格式无效，应为 @文件名[In].参数名。`,
+        );
+        break;
+      }
+      const matches = referencedInputBindings(
+        current.inputReference,
+        inputs,
+      );
+      if (matches.length > 1) {
+        errors.set(
+          parameterKey(binding),
+          `参数引用 ${current.inputReference} 对应多个输入参数，请使用唯一的文件名和参数名。`,
+        );
+        break;
+      }
+      current = matches[0];
+      if (!current) {
+        errors.set(
+          parameterKey(binding),
+          `参数“${path.at(-1)?.name ?? binding.name}”引用了不存在的输入参数 ${path.at(-1)?.inputReference ?? ""}。`,
+        );
+      }
+    }
+  }
+  for (const binding of inputs) {
+    const root = roots.get(parameterKey(binding));
+    const bindingKey = parameterKey(binding);
+    if (
+      root &&
+      parameterKey(root) !== bindingKey &&
+      root.parameterType !== binding.parameterType
+    ) {
+      errors.set(
+        bindingKey,
+        `参数“${binding.name}”与引用参数“${root.name}”的类型不一致。`,
+      );
+    }
+  }
+  return { roots, errors };
+}
 
 export function inferParameterType(value: string): LaunchParameterType {
   const trimmed = value.trim();
@@ -165,17 +324,58 @@ export function validateParameterValue(
   return null;
 }
 
-export interface LaunchBinding {
-  id: string;
+export function parameterFileName(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, "/");
+  return normalized.slice(normalized.lastIndexOf("/") + 1);
+}
+
+export const FREE_PARAMETER_SCOPE = "自由参数";
+
+export function parameterKey(binding: LaunchBinding): string {
+  return binding.scope === "free"
+    ? `${FREE_PARAMETER_SCOPE}.${binding.name}`
+    : `${parameterFileName(binding.filePath)}.${binding.name}`;
+}
+
+interface LaunchBindingBase {
   name: string;
   direction: LaunchBindingDirection;
-  filePath: string;
-  locator: LaunchLocator;
+  outputName?: string;
+  inputReference?: string;
+  outputReference?: string;
+  locatorInvalid?: boolean;
+  locatorInvalidAnchor?: number;
   value: string;
   parameterType: LaunchParameterType;
   defaultValue: string;
   unit: string;
   description: string;
+}
+
+export interface FileLaunchBinding extends LaunchBindingBase {
+  scope?: "file";
+  filePath: string;
+  locator: LaunchLocator;
+}
+
+export interface FreeLaunchBinding extends LaunchBindingBase {
+  scope: "free";
+  filePath?: never;
+  locator?: never;
+}
+
+export type LaunchBinding = FileLaunchBinding | FreeLaunchBinding;
+
+export function isFileBinding(
+  binding: LaunchBinding,
+): binding is FileLaunchBinding {
+  return binding.scope !== "free";
+}
+
+export function isFreeBinding(
+  binding: LaunchBinding,
+): binding is FreeLaunchBinding {
+  return binding.scope === "free";
 }
 
 export interface ResolvedLaunchBinding {
@@ -185,21 +385,22 @@ export interface ResolvedLaunchBinding {
 }
 
 export interface BindingError {
-  bindingId: string;
+  parameterKey: string;
   message: string;
 }
 
 export interface WriteBindingsResult {
   source: string;
   bindings: LaunchBinding[];
-  writtenBindingIds: string[];
+  writtenParameterKeys: string[];
   errors: BindingError[];
 }
 
 export interface OutputExtraction {
-  bindingId: string;
+  parameterKey: string;
+  fileName: string;
   name: string;
-  filePath: string;
+  filePath?: string;
   value: string | null;
   range: SourceRange | null;
   error: string | null;
@@ -990,7 +1191,6 @@ export function createBindingFromSelection(
   file: LaunchFile,
   selection: SourceRange,
   direction: LaunchBindingDirection,
-  id: string,
   name?: string,
 ): LaunchBinding {
   if (selection.end <= selection.start) {
@@ -1009,7 +1209,6 @@ export function createBindingFromSelection(
   const resolved = resolveLaunchBinding(file.content, locator);
   const value = resolved.value;
   return {
-    id,
     name: name?.trim() || suggestedName.slice(0, 40) || "未命名参数",
     direction,
     filePath: file.path,
@@ -1156,7 +1355,6 @@ export function createBindingFromLocator(
   file: LaunchFile,
   locator: LaunchLocator,
   direction: LaunchBindingDirection,
-  id: string,
   name: string,
 ): LaunchBinding {
   const resolved = resolveLaunchBinding(
@@ -1165,7 +1363,6 @@ export function createBindingFromLocator(
   );
   const value = resolved.value;
   return {
-    id,
     name,
     direction,
     filePath: file.path,
@@ -1182,7 +1379,6 @@ export function createBindingFromRowColumn(
   file: LaunchFile,
   parameter: RowColumnParameter,
   direction: LaunchBindingDirection,
-  id: string,
   name: string,
 ): LaunchBinding {
   const locator: RowColumnLaunchLocator = {
@@ -1198,7 +1394,6 @@ export function createBindingFromRowColumn(
   );
   const value = resolved.value;
   return {
-    id,
     name,
     direction,
     filePath: file.path,
@@ -1296,13 +1491,14 @@ export function writeInputBindings(
   bindings: LaunchBinding[],
 ): WriteBindingsResult {
   const inputs = bindings.filter(
-    (binding) => binding.direction === "input",
+    (binding): binding is FileLaunchBinding =>
+      binding.direction === "input" && isFileBinding(binding),
   );
   if (inputs.length === 0) {
     return {
       source,
       bindings,
-      writtenBindingIds: [],
+      writtenParameterKeys: [],
       errors: [],
     };
   }
@@ -1335,7 +1531,7 @@ export function writeInputBindings(
       ];
     } catch (error) {
       errors.push({
-        bindingId: binding.id,
+        parameterKey: parameterKey(binding),
         message:
           error instanceof Error ? error.message : "输入定位失败。",
       });
@@ -1344,7 +1540,7 @@ export function writeInputBindings(
   });
 
   if (errors.length > 0) {
-    return { source, bindings, writtenBindingIds: [], errors };
+    return { source, bindings, writtenParameterKeys: [], errors };
   }
 
   const sorted = [...replacements].sort(
@@ -1353,13 +1549,13 @@ export function writeInputBindings(
   for (let index = 1; index < sorted.length; index += 1) {
     if (sorted[index].end > sorted[index - 1].start) {
       errors.push({
-        bindingId: sorted[index].binding.id,
+        parameterKey: parameterKey(sorted[index].binding),
         message: "多个输入绑定指向重叠的文本范围。",
       });
     }
   }
   if (errors.length > 0) {
-    return { source, bindings, writtenBindingIds: [], errors };
+    return { source, bindings, writtenParameterKeys: [], errors };
   }
 
   let nextSource = source;
@@ -1372,14 +1568,15 @@ export function writeInputBindings(
 
   const replacementById = new Map(
     replacements.map((replacement) => [
-      replacement.binding.id,
+      parameterKey(replacement.binding),
       replacement.text,
     ]),
   );
   return {
     source: nextSource,
     bindings: bindings.map((binding) => {
-      const replacement = replacementById.get(binding.id);
+      if (!isFileBinding(binding)) return binding;
+      const replacement = replacementById.get(parameterKey(binding));
       if (replacement === undefined) return binding;
       return {
         ...binding,
@@ -1390,7 +1587,7 @@ export function writeInputBindings(
         ),
       };
     }),
-    writtenBindingIds: inputs.map((binding) => binding.id),
+    writtenParameterKeys: inputs.map(parameterKey),
     errors: [],
   };
 }
@@ -1400,45 +1597,110 @@ export function extractOutputBindings(
   bindings: LaunchBinding[],
 ): OutputExtraction[] {
   const filesByPath = new Map(files.map((file) => [file.path, file]));
-  return bindings
-    .filter((binding) => binding.direction === "output")
-    .map((binding) => {
-      const file = filesByPath.get(binding.filePath);
-      if (!file) {
-        return {
-          bindingId: binding.id,
-          name: binding.name,
-          filePath: binding.filePath,
-          value: null,
-          range: null,
-          error: "输出文件已被移除。",
-        };
-      }
-      try {
-        const resolved = resolveLaunchBinding(
-          file.content,
-          binding.locator,
-        );
-        return {
-          bindingId: binding.id,
-          name: binding.name,
-          filePath: binding.filePath,
-          value: resolved.value,
-          range: { start: resolved.start, end: resolved.end },
-          error: null,
-        };
-      } catch (error) {
-        return {
-          bindingId: binding.id,
-          name: binding.name,
-          filePath: binding.filePath,
-          value: null,
-          range: null,
-          error:
-            error instanceof Error ? error.message : "输出提取失败。",
-        };
-      }
+  const fileOutputs: OutputExtraction[] = [];
+  for (const binding of bindings) {
+    if (binding.direction !== "output" || !isFileBinding(binding)) continue;
+    const file = filesByPath.get(binding.filePath);
+    if (!file) {
+      fileOutputs.push({
+        parameterKey: parameterKey(binding),
+        fileName: parameterFileName(binding.filePath),
+        name: binding.name,
+        filePath: binding.filePath,
+        value: null,
+        range: null,
+        error: "输出文件已被移除。",
+      });
+      continue;
+    }
+    try {
+      const resolved = resolveLaunchBinding(
+        file.content,
+        binding.locator,
+      );
+      fileOutputs.push({
+        parameterKey: parameterKey(binding),
+        fileName: parameterFileName(binding.filePath),
+        name: binding.name,
+        filePath: binding.filePath,
+        value: resolved.value,
+        range: { start: resolved.start, end: resolved.end },
+        error: null,
+      });
+    } catch (error) {
+      fileOutputs.push({
+        parameterKey: parameterKey(binding),
+        fileName: parameterFileName(binding.filePath),
+        name: binding.name,
+        filePath: binding.filePath,
+        value: null,
+        range: null,
+        error:
+          error instanceof Error ? error.message : "输出提取失败。",
+      });
+    }
+  }
+  const fileOutputByKey = new Map(
+    fileOutputs.map((output) => [output.parameterKey, output]),
+  );
+  const freeOutputs: OutputExtraction[] = [];
+  for (const binding of bindings) {
+    if (binding.direction !== "output" || !isFreeBinding(binding)) continue;
+    const manualValue = binding.value.trim() ? binding.value : null;
+    if (!binding.outputReference?.trim()) {
+      freeOutputs.push({
+        parameterKey: parameterKey(binding),
+        fileName: FREE_PARAMETER_SCOPE,
+        name: binding.name,
+        value: manualValue,
+        range: null,
+        error: null,
+      });
+      continue;
+    }
+    const matches = referencedOutputBindings(
+      binding.outputReference,
+      bindings,
+    );
+    if (matches.length > 1) {
+      freeOutputs.push({
+        parameterKey: parameterKey(binding),
+        fileName: FREE_PARAMETER_SCOPE,
+        name: binding.name,
+        value: manualValue,
+        range: null,
+        error: `输出引用 ${binding.outputReference} 对应多个输出参数。`,
+      });
+      continue;
+    }
+    const target = matches[0]
+      ? fileOutputByKey.get(parameterKey(matches[0]))
+      : undefined;
+    if (!target || target.value === null || target.error) {
+      freeOutputs.push({
+        parameterKey: parameterKey(binding),
+        fileName: FREE_PARAMETER_SCOPE,
+        name: binding.name,
+        value: manualValue,
+        range: null,
+        error:
+          manualValue !== null
+            ? null
+            : target?.error ??
+              `未找到输出引用 ${binding.outputReference}。`,
+      });
+      continue;
+    }
+    freeOutputs.push({
+      parameterKey: parameterKey(binding),
+      fileName: FREE_PARAMETER_SCOPE,
+      name: binding.name,
+      value: target.value,
+      range: null,
+      error: null,
     });
+  }
+  return [...fileOutputs, ...freeOutputs];
 }
 
 export function parseCommandArguments(input: string): string[] {
@@ -1485,13 +1747,45 @@ export function interpolateArguments(
   args: string[],
   bindings: LaunchBinding[],
 ): string[] {
-  const values = new Map(bindings.map((binding) => [binding.name, binding.value]));
-  return args.map((argument) =>
-    argument.replace(/\{\{([^{}]+)\}\}/g, (placeholder, rawName) => {
-      const key = String(rawName).trim();
-      return values.get(key) ?? placeholder;
-    }),
+  if (args.some((argument) => /\{\{[^{}]+\}\}/.test(argument))) {
+    throw new LauncherError(
+      "启动参数只支持 @文件名[In].参数名 语法，不支持 {{参数名}}。",
+    );
+  }
+  const resolution = resolveInputReferences(bindings);
+  const referenceError = [...resolution.errors.values()][0];
+  if (referenceError) throw new LauncherError(referenceError);
+  const errors = new Set<string>();
+  const lookupReference = (rawReference: string): string => {
+    const matches = referencedInputBindings(
+      `@${rawReference.trim()}`,
+      bindings,
+    );
+    if (matches.length === 0) {
+      errors.add(`未找到输入参数 @${rawReference}。`);
+      return `@${rawReference}`;
+    }
+    if (matches.length > 1) {
+      errors.add(`输入参数 @${rawReference} 对应多个绑定，请使用唯一参数名。`);
+      return `@${rawReference}`;
+    }
+    return (
+      resolution.roots.get(parameterKey(matches[0]))?.value ??
+      matches[0].value
+    );
+  };
+  const interpolated = args.map((argument) =>
+    argument
+      .replace(
+        /(^|[\s=,:])@([^\s"'`,;]+\[In\]\.[^\s"'`,;]+)/gi,
+        (_placeholder, prefix: string, rawReference: string) =>
+          `${prefix}${lookupReference(rawReference)}`,
+      ),
   );
+  if (errors.size > 0) {
+    throw new LauncherError([...errors].join("；"));
+  }
+  return interpolated;
 }
 
 function quoteCommandArgument(argument: string): string {

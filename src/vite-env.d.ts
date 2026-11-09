@@ -9,7 +9,7 @@ interface DesktopFilePayload {
 }
 
 interface DesktopRunResult {
-  status: "completed" | "failed" | "timeout";
+  status: "completed" | "failed";
   exitCode: number | null;
   signal: string | null;
   error: string | null;
@@ -36,11 +36,15 @@ interface ProgramStudioApi {
     },
   ) => Promise<{ path: string; name: string } | null>;
   openProject: () => Promise<unknown | null>;
+  createRunWorkspace: (
+    projectPath: string,
+  ) => Promise<{ runId: string; path: string }>;
   runProgram: (request: {
+    mode?: "direct" | "shell";
     program: string;
     args: string[];
     cwd?: string;
-    timeoutMs?: number;
+    environment?: Record<string, string>;
   }) => Promise<DesktopRunResult>;
   setDirty: (dirty: boolean) => void;
   setTheme: (preference: "system" | "light" | "dark") => void;

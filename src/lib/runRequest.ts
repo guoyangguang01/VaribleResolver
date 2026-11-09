@@ -1,7 +1,7 @@
 import type { ProjectInputOverride } from "./projectExecution.ts";
 
 export const RUN_REQUEST_SCHEMA = "program-studio-run-request";
-export const RUN_REQUEST_VERSION = 1;
+export const RUN_REQUEST_VERSION = 2;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -29,28 +29,21 @@ function parseOverride(
     throw new Error(`第 ${index + 1} 个覆盖项结构无效。`);
   }
   const selector = value.selector;
-  if (selector.type === "bindingId") {
+  if (selector.type === "parameter") {
     return {
-      target: "bindingId",
-      bindingId: requiredString(
-        selector.id,
-        `overrides[${index}].selector.id`,
+      fileName: requiredString(
+        selector.fileName,
+        `overrides[${index}].selector.fileName`,
       ),
-      value: value.value,
-    };
-  }
-  if (selector.type === "name") {
-    return {
-      target: "name",
-      name: requiredString(
-        selector.name,
-        `overrides[${index}].selector.name`,
+      parameterName: requiredString(
+        selector.parameterName,
+        `overrides[${index}].selector.parameterName`,
       ),
       value: value.value,
     };
   }
   throw new Error(
-    `第 ${index + 1} 个覆盖选择器类型无效，应为 bindingId 或 name。`,
+    `第 ${index + 1} 个覆盖选择器类型无效，应为 parameter。`,
   );
 }
 

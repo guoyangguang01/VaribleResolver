@@ -1,17 +1,21 @@
-const {
+import {
   app,
   BrowserWindow,
   dialog,
   ipcMain,
   nativeTheme,
-} = require("electron");
-const fs = require("node:fs/promises");
-const path = require("node:path");
-const { spawn } = require("node:child_process");
+} from "electron";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { assertInsideRoot } from "./projectPaths.js";
+import { runProgram } from "./processRunner.js";
+import { createProjectRunWorkspace } from "./runWorkspace.js";
+
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 const MAX_FILE_BYTES = 32 * 1024 * 1024;
-const MAX_OUTPUT_BYTES = 1024 * 1024;
-const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+const PROJECT_SCHEMA_VERSION = 4;
 
 let mainWindow = null;
 let hasUnsavedChanges = false;
@@ -59,7 +63,7 @@ function createWindow() {
     title: "Program Studio",
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
+      preload: path.join(currentDirectory, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -70,7 +74,9 @@ function createWindow() {
   if (devServerUrl) {
     void mainWindow.loadURL(devServerUrl);
   } else {
-    void mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+    void mainWindow.loadFile(
+      path.join(currentDirectory, "..", "dist", "index.html"),
+    );
   }
 
   mainWindow.once("ready-to-show", () => {
@@ -218,6 +224,7 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
     !payload.manifest ||
     !payload.launch ||
     !payload.parameters ||
+    !payload.outputs ||
     !Array.isArray(payload.files)
   ) {
     throw new Error("工程目录数据无效。");
@@ -245,7 +252,7 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
     }
     if (
       existingManifest?.schema !== "program-studio-folder-project" ||
-      ![2, 3].includes(existingManifest?.schemaVersion)
+      existingManifest?.schemaVersion !== PROJECT_SCHEMA_VERSION
     ) {
       throw new Error(`工程版本不受支持：${projectDirectory}`);
     }
@@ -292,6 +299,11 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
     JSON.stringify(payload.parameters, null, 2),
     "utf8",
   );
+  await fs.writeFile(
+    path.join(projectDirectory, "outputs.json"),
+    JSON.stringify(payload.outputs, null, 2),
+    "utf8",
+  );
   for (const file of payload.files) {
     if (
       !file ||
@@ -301,10 +313,11 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
       throw new Error("工程封装文件参数无效。");
     }
     const targetPath = path.resolve(projectDirectory, file.relativePath);
-    const rootWithSeparator = `${path.resolve(projectDirectory)}${path.sep}`;
-    if (!targetPath.startsWith(rootWithSeparator)) {
-      throw new Error(`工程文件路径越界：${file.relativePath}`);
-    }
+    assertInsideRoot(
+      targetPath,
+      projectDirectory,
+      `工程文件路径越界：${file.relativePath}`,
+    );
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, file.content, "utf8");
   }
@@ -325,25 +338,29 @@ ipcMain.handle("client:open-project", async () => {
   const manifestPath = path.join(projectDirectory, "project.json");
   const launchPath = path.join(projectDirectory, "launch.json");
   const parametersPath = path.join(projectDirectory, "parameters.json");
-  const [manifestSource, launchSource, parametersSource] = await Promise.all([
-    fs.readFile(manifestPath, "utf8"),
-    fs.readFile(launchPath, "utf8"),
-    fs.readFile(parametersPath, "utf8"),
-  ]);
+  const outputsPath = path.join(projectDirectory, "outputs.json");
+  const [manifestSource, launchSource, parametersSource, outputsSource] =
+    await Promise.all([
+      fs.readFile(manifestPath, "utf8"),
+      fs.readFile(launchPath, "utf8"),
+      fs.readFile(parametersPath, "utf8"),
+      fs.readFile(outputsPath, "utf8"),
+    ]);
   const manifest = JSON.parse(manifestSource);
   if (!Array.isArray(manifest.files)) {
     throw new Error("project.json 缺少 files 文件清单。");
   }
-  const rootWithSeparator = `${projectDirectory}${path.sep}`;
   const files = await Promise.all(
     manifest.files.map(async (entry) => {
       if (!entry || typeof entry.relativePath !== "string") {
         throw new Error("工程文件清单条目无效。");
       }
       const filePath = path.resolve(projectDirectory, entry.relativePath);
-      if (!filePath.startsWith(rootWithSeparator)) {
-        throw new Error(`工程文件路径越界：${entry.relativePath}`);
-      }
+      assertInsideRoot(
+        filePath,
+        projectDirectory,
+        `工程文件路径越界：${entry.relativePath}`,
+      );
       return {
         relativePath: entry.relativePath,
         content: (await fs.readFile(filePath)).toString("utf8"),
@@ -355,8 +372,16 @@ ipcMain.handle("client:open-project", async () => {
     manifest,
     launch: JSON.parse(launchSource),
     parameters: JSON.parse(parametersSource),
+    outputs: JSON.parse(outputsSource),
     files,
   };
+});
+
+ipcMain.handle("client:create-run-workspace", async (_event, projectPath) => {
+  if (typeof projectPath !== "string" || !projectPath.trim()) {
+    throw new Error("工程目录不能为空。");
+  }
+  return createProjectRunWorkspace(path.resolve(projectPath));
 });
 
 ipcMain.handle("client:run-program", async (_event, request) => {
@@ -370,74 +395,25 @@ ipcMain.handle("client:run-program", async (_event, request) => {
     typeof request.cwd === "string" && request.cwd.trim()
       ? path.resolve(request.cwd)
       : undefined;
-  const timeoutMs = Math.max(
-    1000,
-    Math.min(
-      Number(request.timeoutMs) || DEFAULT_TIMEOUT_MS,
-      30 * 60 * 1000,
-    ),
-  );
-  const startedAt = Date.now();
-
-  return new Promise((resolve) => {
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    const child = spawn(request.program.trim(), args, {
-      cwd,
-      shell: false,
-      windowsHide: true,
-      env: process.env,
-    });
-
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve({
-        ...result,
-        stdout,
-        stderr,
-        durationMs: Date.now() - startedAt,
-      });
-    };
-
-    const timer = setTimeout(() => {
-      child.kill();
-      finish({
-        status: "timeout",
-        exitCode: null,
-        signal: null,
-        error: `程序超过 ${timeoutMs} ms 未结束。`,
-      });
-    }, timeoutMs);
-
-    child.stdout.on("data", (chunk) => {
-      if (stdout.length < MAX_OUTPUT_BYTES) {
-        stdout += chunk.toString("utf8").slice(0, MAX_OUTPUT_BYTES - stdout.length);
-      }
-    });
-    child.stderr.on("data", (chunk) => {
-      if (stderr.length < MAX_OUTPUT_BYTES) {
-        stderr += chunk.toString("utf8").slice(0, MAX_OUTPUT_BYTES - stderr.length);
-      }
-    });
-    child.once("error", (error) => {
-      finish({
-        status: "failed",
-        exitCode: null,
-        signal: null,
-        error: error.message,
-      });
-    });
-    child.once("close", (exitCode, signal) => {
-      finish({
-        status: exitCode === 0 ? "completed" : "failed",
-        exitCode,
-        signal,
-        error: null,
-      });
-    });
+  const mode =
+    request.mode === "shell" ? "shell" : "direct";
+  const environment =
+    request.environment &&
+    typeof request.environment === "object" &&
+    !Array.isArray(request.environment)
+      ? Object.fromEntries(
+          Object.entries(request.environment).map(([key, value]) => [
+            key,
+            String(value),
+          ]),
+        )
+      : {};
+  return runProgram({
+    mode,
+    program: request.program.trim(),
+    args,
+    cwd,
+    environment,
   });
 });
 

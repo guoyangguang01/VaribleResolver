@@ -33,7 +33,7 @@
 - 使用适配器隔离文件系统和进程操作。
 - 保持 CLI 封装层足够薄。
 - 让测试直接调用执行工具。
-- 使用标准请求结构，支持按绑定 ID 或唯一参数名称覆盖输入值。
+- 使用标准请求结构，按 `文件名 + 参数名` 复合主键覆盖输入值。
 - 未覆盖的输入参数不扫描、不校验、不写回。
 - 工程生成时复制绑定文件，并将运行路径全部归一化到生成工程内部。
 - 执行工具直接使用生成工程中的绑定文件，不处理原始文件副本或恢复。
@@ -95,27 +95,20 @@ ProjectExecutionPorts
 interface ProjectExecutionRequest {
   snapshot: ProjectExecutionSnapshot;
   overrides: ProjectInputOverride[];
-  timeoutMs?: number;
 }
 ```
 
 标准覆盖结构：
 
 ```ts
-type ProjectInputOverride =
-  | {
-      target: "bindingId";
-      bindingId: string;
-      value: string;
-    }
-  | {
-      target: "name";
-      name: string;
-      value: string;
-    };
+interface ProjectInputOverride {
+  fileName: string;
+  parameterName: string;
+  value: string;
+}
 ```
 
-参数名称必须唯一；同名参数必须使用绑定 ID。同一次请求中不允许重复覆盖同一个绑定。
+文件名和参数名组合必须唯一；不同文件允许使用相同参数名。同一次请求中不允许重复覆盖同一个主参数。
 
 ### 5.2 结果
 
@@ -219,7 +212,7 @@ interface ProjectExecutionAdapter {
 
 CLI 只负责：
 
-1. 解析 `--project`、`--set-id`、`--set-name`、`--request` 和 `--timeout-ms`。
+1. 解析 `--project`、`--set` 和 `--request`。
 2. 加载目录式工程。
 3. 创建 `DesktopExecutionPorts`。
 4. 调用 `ProjectExecutionTool.execute`。
@@ -255,9 +248,9 @@ UI 不得自行写文件、启动程序、提取输出或执行比较。
 单元测试使用 `MemoryExecutionPorts`：
 
 - 合法覆盖参数。
-- 按绑定 ID 覆盖。
-- 按唯一参数名称覆盖。
-- 参数名称不唯一时拒绝覆盖。
+- 按完整文件名和参数名覆盖。
+- 按省略扩展名的文件名和参数名覆盖。
+- 文件名和参数名组合不唯一时拒绝覆盖。
 - 同一绑定被重复覆盖时拒绝请求。
 - 未知参数。
 - 输出参数被误覆盖。
@@ -338,7 +331,7 @@ UI 不得自行写文件、启动程序、提取输出或执行比较。
 - 删除 `runProgram`。
 - 删除 `createAdapter`。
 - 删除文件系统直接操作。
-- 将 `--override` 替换为标准 `--set-id`、`--set-name` 和 `--request`。
+- 将 `--override` 替换为标准 `--set` 和 `--request`。
 - 删除 `compareBaseline`。
 - 删除第一次原参数执行。
 - 删除结果中的 `baseline`、`mode` 和 `comparisons`。
@@ -374,7 +367,7 @@ CLI 测试不得启动真实工程程序。真实进程仅在明确标记的适�
 
 1. 本次覆盖目标的定位规则合法时只调用一次 `process.run`。
 2. 任一覆盖目标定位失败时不调用 `process.run`。
-3. 绑定 ID 和唯一参数名称都能解析到同一个输入绑定。
+3. 完整文件名和省略扩展名的文件名都能解析到同一个输入绑定。
 4. 同名参数和不存在的选择器在写盘前失败。
 5. 程序返回非零退出码时，仍读取已有输出。
 6. 程序超时或抛错时，执行器不访问生成工程之外的绑定路径。
@@ -394,7 +387,7 @@ CLI 测试不得启动真实工程程序。真实进程仅在明确标记的适�
 - 只校验本次覆盖涉及的输入参数，不扫描未覆盖输入。
 - 执行结果包含实际输入值、输出值和运行时信息。
 - 执行结果不包含文件恢复状态。
-- `npm test` 与 `npm run build:web` 通过。
+- `npm test` 与 `npm run build` 通过。
 
 ## 12. 实施阶段
 
@@ -443,16 +436,19 @@ CLI 测试不得启动真实工程程序。真实进程仅在明确标记的适�
 
 已完成：
 
-- 标准 `bindingId` / `name` 覆盖请求。
-- `--set-id`、`--set-name` 和 `--request` CLI 入口。
+- 标准 `fileName + parameterName` 覆盖请求。
+- `--set` 和 `--request` CLI 入口。
 - 执行工具与桌面、本地、内存适配器分离。
 - 删除基线比较、原文件恢复和 `keepChanges`。
 - 只处理覆盖目标，不扫描未覆盖输入。
-- 工程 schema v3、绑定文件复制和运行路径归一化。
+- 工程 schema v4、文件角色、输出契约和运行路径归一化。
 - UI 保存生成工程后调用统一执行工具。
-- 兼容读取 schema v2 工程。
+- UI 和 CLI 每次执行创建独立 `runs/<runId>` 工作区。
+- 参考输出默认不进入运行工作区，输出参数映射到运行空间中的实际文件路径。
+- 启动配置支持 direct 和 shell 模式。
+- 兼容读取 schema v2/v3 工程。
 
 尚未确定：
 
-- 输出绑定文件目前作为参数提取参考，真实输出文件位置的声明和映射规则尚未定义。
+- 当前输出发现先支持固定路径；Glob、Manifest 和目录扫描仍待扩展。
 - 程序需要的未绑定支持文件如何纳入生成工程尚未定义。

@@ -36,7 +36,6 @@ function buildSnapshot(): ProjectExecutionSnapshot {
         endColumnIndex: 13,
       }),
       "input",
-      "pressure",
       "压力",
     ),
     parameterType: "number" as const,
@@ -51,14 +50,13 @@ function buildSnapshot(): ProjectExecutionSnapshot {
         endColumnIndex: 11,
       }),
       "output",
-      "result",
       "结果",
     ),
     parameterType: "number" as const,
   };
   return {
     program: "C:\\solver.exe",
-    arguments: "--pressure {{压力}}",
+    arguments: "--pressure @input[In].压力",
     workingDirectory: "C:\\case",
     files: [inputFile, outputFile],
     bindings: [input, output],
@@ -117,7 +115,7 @@ class MemoryAdapter implements ProjectExecutionAdapter {
   }
 }
 
-test("applies an input override by name and extracts outputs", async () => {
+test("applies an input override by file and parameter name", async () => {
   const adapter = new MemoryAdapter([
     [INPUT_PATH, "pressure = 10\n"],
     [OUTPUT_PATH, "result = 20\n"],
@@ -125,7 +123,11 @@ test("applies an input override by name and extracts outputs", async () => {
   const result = await executeProjectWithOverrides({
     snapshot: buildSnapshot(),
     overrides: [
-      { target: "name", name: "压力", value: "25" },
+      {
+        fileName: "input.txt",
+        parameterName: "压力",
+        value: "25",
+      },
     ],
     adapter,
   });
@@ -147,7 +149,7 @@ test("applies an input override by name and extracts outputs", async () => {
   assert.equal(adapter.files.get(OUTPUT_PATH), "result = 45\n");
 });
 
-test("applies an input override by binding ID", async () => {
+test("matches an input override by the file stem", async () => {
   const snapshot = buildSnapshot();
   const adapter = new MemoryAdapter([
     [INPUT_PATH, "pressure = 10\n"],
@@ -158,17 +160,99 @@ test("applies an input override by binding ID", async () => {
     snapshot,
     overrides: [
       {
-        target: "bindingId",
-        bindingId: snapshot.bindings[0].id,
+        fileName: "input",
+        parameterName: "压力",
         value: "25",
       },
     ],
     adapter,
   });
 
-  assert.equal(result.inputs[0].bindingId, snapshot.bindings[0].id);
+  assert.equal(result.inputs[0].parameterKey, "input.txt.压力");
   assert.equal(result.inputs[0].effectiveValue, "25");
   assert.equal(result.outputs[0].value, "45");
+});
+
+test("writes a primary input value to every referencing file", async () => {
+  const snapshot = buildSnapshot();
+  const aliasFile = createLaunchFile(
+    "C:\\case\\alias.txt",
+    "pressure = 10\n",
+  );
+  const alias = {
+    ...snapshot.bindings[0],
+    name: "副本压力",
+    filePath: aliasFile.path,
+    inputReference: "@input[In].压力",
+  };
+  snapshot.files.push(aliasFile);
+  snapshot.bindings.push(alias);
+  const adapter = new MemoryAdapter([
+    [INPUT_PATH, "pressure = 10\n"],
+    [aliasFile.path, "pressure = 10\n"],
+    [OUTPUT_PATH, "result = 20\n"],
+  ]);
+
+  const result = await executeProjectWithOverrides({
+    snapshot,
+    overrides: [
+      {
+        fileName: "input.txt",
+        parameterName: "压力",
+        value: "25",
+      },
+    ],
+    adapter,
+  });
+
+  assert.equal(adapter.files.get(INPUT_PATH), "pressure = 25\n");
+  assert.equal(adapter.files.get(aliasFile.path), "pressure = 25\n");
+  assert.equal(result.inputs.length, 2);
+  assert.deepEqual(
+    result.inputs.map((input) => input.effectiveValue),
+    ["25", "25"],
+  );
+});
+
+test("rejects assigning a referencing input directly", async () => {
+  const snapshot = buildSnapshot();
+  const mainFile = createLaunchFile(
+    "C:\\case\\main.txt",
+    "pressure = 10\n",
+  );
+  const primary = {
+    ...snapshot.bindings[0],
+    name: "主压力",
+    filePath: mainFile.path,
+  };
+  const alias = {
+    ...snapshot.bindings[0],
+    inputReference: "@main[In].主压力",
+  };
+  snapshot.files.push(mainFile);
+  snapshot.bindings = [primary, alias, snapshot.bindings[1]];
+  const adapter = new MemoryAdapter([
+    [mainFile.path, "pressure = 10\n"],
+    [INPUT_PATH, "pressure = 10\n"],
+    [OUTPUT_PATH, "result = 20\n"],
+  ]);
+
+  await assert.rejects(
+    () =>
+      executeProjectWithOverrides({
+        snapshot,
+        overrides: [
+          {
+            fileName: "input.txt",
+            parameterName: "压力",
+            value: "25",
+          },
+        ],
+        adapter,
+      }),
+    /请改为覆盖主参数/,
+  );
+  assert.equal(adapter.requests.length, 0);
 });
 
 test("does not read or write input files outside the override targets", async () => {
@@ -187,7 +271,6 @@ test("does not read or write input files outside the override targets", async ()
         endColumnIndex: 11,
       }),
       "input",
-      "unused",
       "未覆盖参数",
     ),
     parameterType: "number" as const,
@@ -203,7 +286,11 @@ test("does not read or write input files outside the override targets", async ()
   await executeProjectWithOverrides({
     snapshot,
     overrides: [
-      { target: "name", name: "压力", value: "25" },
+      {
+        fileName: "input.txt",
+        parameterName: "压力",
+        value: "25",
+      },
     ],
     adapter,
   });
@@ -223,7 +310,11 @@ test("rejects unknown and output parameter overrides before writing files", asyn
       executeProjectWithOverrides({
         snapshot: buildSnapshot(),
         overrides: [
-          { target: "name", name: "unknown", value: "1" },
+          {
+            fileName: "input.txt",
+            parameterName: "unknown",
+            value: "1",
+          },
         ],
         adapter,
       }),
@@ -236,7 +327,11 @@ test("rejects unknown and output parameter overrides before writing files", asyn
       executeProjectWithOverrides({
         snapshot: buildSnapshot(),
         overrides: [
-          { target: "name", name: "结果", value: "99" },
+          {
+            fileName: "output.txt",
+            parameterName: "结果",
+            value: "99",
+          },
         ],
         adapter,
       }),
@@ -249,7 +344,6 @@ test("rejects ambiguous names and duplicate binding selectors", async () => {
   const snapshot = buildSnapshot();
   snapshot.bindings.push({
     ...snapshot.bindings[0],
-    id: "duplicate-name",
   });
   const adapter = new MemoryAdapter([
     [INPUT_PATH, "pressure = 10\n"],
@@ -261,7 +355,11 @@ test("rejects ambiguous names and duplicate binding selectors", async () => {
       executeProjectWithOverrides({
         snapshot,
         overrides: [
-          { target: "name", name: "压力", value: "25" },
+          {
+            fileName: "input.txt",
+            parameterName: "压力",
+            value: "25",
+          },
         ],
         adapter,
       }),
@@ -275,13 +373,13 @@ test("rejects ambiguous names and duplicate binding selectors", async () => {
         snapshot: stableSnapshot,
         overrides: [
           {
-            target: "bindingId",
-            bindingId: stableSnapshot.bindings[0].id,
+            fileName: "input.txt",
+            parameterName: "压力",
             value: "25",
           },
           {
-            target: "bindingId",
-            bindingId: stableSnapshot.bindings[0].id,
+            fileName: "input.txt",
+            parameterName: "压力",
             value: "30",
           },
         ],
@@ -313,7 +411,11 @@ test("returns extracted outputs even when the program fails", async () => {
   const result = await executeProjectWithOverrides({
     snapshot: buildSnapshot(),
     overrides: [
-      { target: "name", name: "压力", value: "15" },
+      {
+        fileName: "input.txt",
+        parameterName: "压力",
+        value: "15",
+      },
     ],
     adapter,
   });
@@ -323,6 +425,105 @@ test("returns extracted outputs even when the program fails", async () => {
   assert.equal("comparisons" in result, false);
   assert.equal(adapter.files.get(INPUT_PATH), "pressure = 15\n");
   assert.equal(adapter.files.get(OUTPUT_PATH), "result = 33\n");
+});
+
+test("passes a free input parameter without touching any input file", async () => {
+  const snapshot = buildSnapshot();
+  snapshot.arguments =
+    "--material @自由参数[In].材料 --pressure @input[In].压力";
+  snapshot.bindings.unshift({
+    scope: "free",
+    name: "材料",
+    direction: "input",
+    value: "steel",
+    parameterType: "text",
+    defaultValue: "steel",
+    unit: "",
+    description: "",
+  });
+  const adapter = new MemoryAdapter([
+    [INPUT_PATH, "pressure = 10\n"],
+    [OUTPUT_PATH, "result = 20\n"],
+  ]);
+
+  const result = await executeProjectWithOverrides({
+    snapshot,
+    overrides: [
+      {
+        fileName: "自由参数",
+        parameterName: "材料",
+        value: "aluminum",
+      },
+    ],
+    adapter,
+  });
+
+  assert.deepEqual(adapter.requests[0].args, [
+    "--material",
+    "aluminum",
+    "--pressure",
+    "10",
+  ]);
+  assert.equal(adapter.readPaths.includes(INPUT_PATH), false);
+  assert.equal(result.inputs[0].parameterKey, "自由参数.材料");
+  assert.equal(result.inputs[0].filePath, undefined);
+  assert.equal(result.inputs[0].effectiveValue, "aluminum");
+});
+
+test("returns referenced and manual free output values", async () => {
+  const snapshot = buildSnapshot();
+  snapshot.bindings.push(
+    {
+      scope: "free",
+      name: "引用结果",
+      direction: "output",
+      outputReference: "@output[Out].结果",
+      value: "",
+      parameterType: "number",
+      defaultValue: "",
+      unit: "",
+      description: "",
+    },
+    {
+      scope: "free",
+      name: "手动结果",
+      direction: "output",
+      value: "manual",
+      parameterType: "text",
+      defaultValue: "",
+      unit: "",
+      description: "",
+    },
+  );
+  const adapter = new MemoryAdapter([
+    [INPUT_PATH, "pressure = 10\n"],
+    [OUTPUT_PATH, "result = 20\n"],
+  ]);
+
+  const result = await executeProjectWithOverrides({
+    snapshot,
+    overrides: [
+      {
+        fileName: "input.txt",
+        parameterName: "压力",
+        value: "25",
+      },
+    ],
+    adapter,
+  });
+
+  assert.equal(
+    result.outputs.find(
+      (output) => output.parameterKey === "自由参数.引用结果",
+    )?.value,
+    "45",
+  );
+  assert.equal(
+    result.outputs.find(
+      (output) => output.parameterKey === "自由参数.手动结果",
+    )?.value,
+    "manual",
+  );
 });
 
 test("does not write any input when an input value is invalid", async () => {
@@ -337,8 +538,8 @@ test("does not write any input when an input value is invalid", async () => {
         snapshot: buildSnapshot(),
         overrides: [
           {
-            target: "name",
-            name: "压力",
+            fileName: "input.txt",
+            parameterName: "压力",
             value: "not-a-number",
           },
         ],
