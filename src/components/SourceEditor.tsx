@@ -107,7 +107,7 @@ function editorTheme(theme: ResolvedTheme): Extension {
       ".cm-content": {
         minHeight: "100%",
         padding: "16px 0 36px",
-        caretColor: dark ? "#8faed8" : "#345277",
+        caretColor: dark ? "#f2f7ff" : "#174a83",
       },
       ".cm-line": {
         padding: "0 18px",
@@ -148,7 +148,12 @@ function editorTheme(theme: ResolvedTheme): Extension {
         color: dark ? "#788596" : "#8a95a4",
       },
       ".cm-cursor": {
-        borderLeftColor: dark ? "#b9d2f2" : "#345277",
+        borderLeftWidth: "2px",
+        marginLeft: "-1px",
+        borderLeftColor: dark ? "#f2f7ff" : "#174a83",
+        boxShadow: dark
+          ? "0 0 5px rgba(180, 210, 255, 0.45)"
+          : "0 0 4px rgba(23, 74, 131, 0.25)",
       },
     },
     { dark },
@@ -212,7 +217,7 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
             highlightActiveLineGutter(),
             highlightActiveLine(),
             history(),
-            drawSelection(),
+            drawSelection({ cursorBlinkRate: 0 }),
             dropCursor(),
             EditorState.allowMultipleSelections.of(false),
             EditorState.tabSize.of(2),

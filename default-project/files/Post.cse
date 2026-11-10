@@ -1,0 +1,327 @@
+COMMAND FILE:
+  CFX Post Version = 19.5
+END
+
+PLANE: Plane 1
+  Apply Instancing Transform = On
+  Apply Texture = Off
+  Blend Texture = On
+  Bound Radius = 0.5 [m]
+  Colour = 0.75, 0.75, 0.75
+  Colour Map = Default Colour Map
+  Colour Mode = Constant
+  Colour Scale = Linear
+  Colour Variable = Pressure
+  Colour Variable Boundary Values = Hybrid
+  Culling Mode = No Culling
+  Direction 1 Bound = 1.0 [m]
+  Direction 1 Orientation = 0 [degree]
+  Direction 1 Points = 10
+  Direction 2 Bound = 1.0 [m]
+  Direction 2 Points = 10
+  Domain List = /DOMAIN GROUP:All Domains
+  Draw Faces = On
+  Draw Lines = Off
+  Instancing Transform = /DEFAULT INSTANCE TRANSFORM:Default Transform
+  Invert Plane Bound = Off
+  Lighting = On
+  Line Colour = 0, 0, 0
+  Line Colour Mode = Default
+  Line Width = 1
+  Max = 0.0 [Pa]
+  Min = 0.0 [Pa]
+  Normal = 1 , 0 , 0
+  Option = ZX Plane
+  Plane Bound = None
+  Plane Type = Slice
+  Point = 0 [m], 0 [m], 0 [m]
+  Point 1 = 0 [m], 0 [m], 0 [m]
+  Point 2 = 1 [m], 0 [m], 0 [m]
+  Point 3 = 0 [m], 1 [m], 0 [m]
+  Range = Global
+  Render Edge Angle = 0 [degree]
+  Specular Lighting = On
+  Surface Drawing = Smooth Shading
+  Texture Angle = 0
+  Texture Direction = 0 , 1 , 0
+  Texture Material = Metal
+  Texture Position = 0 , 0
+  Texture Scale = 1
+  Texture Type = Predefined
+  Tile Texture = Off
+  Transform Texture = Off
+  Transparency = 0.0
+  Visibility = On
+  X = 0.0 [m]
+  Y = 0.0 [m]
+  Z = 0.0 [m]
+  OBJECT VIEW TRANSFORM: 
+    Apply Reflection = Off
+    Apply Rotation = Off
+    Apply Scale = Off
+    Apply Translation = Off
+    Principal Axis = Z
+    Reflection Plane Option = XY Plane
+    Rotation Angle = 0.0 [degree]
+    Rotation Axis From = 0 [m], 0 [m], 0 [m]
+    Rotation Axis To = 0 [m], 0 [m], 0 [m]
+    Rotation Axis Type = Principal Axis
+    Scale Vector = 1 , 1 , 1
+    Translation Vector = 0 [m], 0 [m], 0 [m]
+    X = 0.0 [m]
+    Y = 0.0 [m]
+    Z = 0.0 [m]
+  END
+END
+
+CONTOUR: Contour 1
+  Apply Instancing Transform = On
+  Clip Contour = Off
+  Colour Map = Default Colour Map
+  Colour Scale = Linear
+  Colour Variable = Velocity
+  Colour Variable Boundary Values = Hybrid
+  Constant Contour Colour = Off
+  Contour Range = Local
+  Culling Mode = No Culling
+  Domain List = /DOMAIN GROUP:All Domains
+  Draw Contours = On
+  Font = Sans Serif
+  Fringe Fill = On
+  Instancing Transform = /DEFAULT INSTANCE TRANSFORM:Default Transform
+  Lighting = On
+  Line Colour = 0, 0, 0
+  Line Colour Mode = Default
+  Line Width = 1
+  Location List = Plane 1
+  Max = 0.0 [m s^-1]
+  Min = 0.0 [m s^-1]
+  Number of Contours = 11
+  Show Numbers = Off
+  Specular Lighting = On
+  Surface Drawing = Smooth Shading
+  Text Colour = 0, 0, 0
+  Text Colour Mode = Default
+  Text Height = 0.024
+  Transparency = 0.0
+  Use Face Values = Off
+  Value List = 0 [m s^-1],1 [m s^-1]
+  Visibility = On
+  OBJECT VIEW TRANSFORM: 
+    Apply Reflection = Off
+    Apply Rotation = Off
+    Apply Scale = Off
+    Apply Translation = Off
+    Principal Axis = Z
+    Reflection Plane Option = XY Plane
+    Rotation Angle = 0.0 [degree]
+    Rotation Axis From = 0 [m], 0 [m], 0 [m]
+    Rotation Axis To = 0 [m], 0 [m], 0 [m]
+    Rotation Axis Type = Principal Axis
+    Scale Vector = 1 , 1 , 1
+    Translation Vector = 0 [m], 0 [m], 0 [m]
+    X = 0.0 [m]
+    Y = 0.0 [m]
+    Z = 0.0 [m]
+  END
+END
+
+VIEW:View 1
+  Camera Mode = User Specified
+  CAMERA:
+    Option = Pivot Point and Quaternion
+    Pivot Point = 0, 1.30967e-10, -2.0653e-05
+    Scale = 4.93543
+    Pan = 0, 0
+    Rotation Quaternion = -0.707107, 0, 0, 0.707107
+  END
+
+END
+
+> update
+
+>show /CONTOUR: Contour 1, view=/VIEW:View 1
+
+HARDCOPY:
+  Antialiasing = On
+  Hardcopy Filename = J:\ST\AW\fa\fa1\result\V1.png
+  Hardcopy Format = png
+  Hardcopy Tolerance = 0.0001
+  Image Height = 600
+  Image Scale = 100
+  Image Width = 600
+  JPEG Image Quality = 80
+  Screen Capture = Off
+  Use Screen Size = On
+  White Background = On
+END
+>print
+
+>hide /CONTOUR: Contour 1, view=/VIEW:View 1
+
+CONTOUR: Contour 2
+  Apply Instancing Transform = On
+  Clip Contour = Off
+  Colour Map = Default Colour Map
+  Colour Scale = Linear
+  Colour Variable = Temperature
+  Colour Variable Boundary Values = Hybrid
+  Constant Contour Colour = Off
+  Contour Range = Local
+  Culling Mode = No Culling
+  Domain List = /DOMAIN GROUP:All Domains
+  Draw Contours = On
+  Font = Sans Serif
+  Fringe Fill = On
+  Instancing Transform = /DEFAULT INSTANCE TRANSFORM:Default Transform
+  Lighting = On
+  Line Colour = 0, 0, 0
+  Line Colour Mode = Default
+  Line Width = 1
+  Location List = /PLANE:Plane 1
+  Max = 0.0 [K]
+  Min = 0.0 [K]
+  Number of Contours = 11
+  Show Numbers = Off
+  Specular Lighting = On
+  Surface Drawing = Smooth Shading
+  Text Colour = 0, 0, 0
+  Text Colour Mode = Default
+  Text Height = 0.024
+  Transparency = 0.0
+  Use Face Values = Off
+  Value List = 0 [K],1 [K]
+  Visibility = On
+  OBJECT VIEW TRANSFORM: 
+    Apply Reflection = Off
+    Apply Rotation = Off
+    Apply Scale = Off
+    Apply Translation = Off
+    Principal Axis = Z
+    Reflection Plane Option = XY Plane
+    Rotation Angle = 0.0 [degree]
+    Rotation Axis From = 0 [m], 0 [m], 0 [m]
+    Rotation Axis To = 0 [m], 0 [m], 0 [m]
+    Rotation Axis Type = Principal Axis
+    Scale Vector = 1 , 1 , 1
+    Translation Vector = 0 [m], 0 [m], 0 [m]
+    X = 0.0 [m]
+    Y = 0.0 [m]
+    Z = 0.0 [m]
+  END
+END
+
+VIEW:View 1
+  Camera Mode = User Specified
+  CAMERA:
+    Option = Pivot Point and Quaternion
+    Pivot Point = 0, 1.30967e-10, -2.0653e-05
+    Scale = 4.93543
+    Pan = 0, 0
+    Rotation Quaternion = -0.707107, 0, 0, 0.707107
+  END
+
+END
+
+> update
+
+>show /CONTOUR: Contour 2, view=/VIEW:View 1
+
+HARDCOPY:
+  Antialiasing = On
+  Hardcopy Filename = J:\ST\AW\fa\fa1\result\T1.png
+  Hardcopy Format = png
+  Hardcopy Tolerance = 0.0001
+  Image Height = 600
+  Image Scale = 100
+  Image Width = 600
+  JPEG Image Quality = 80
+  Screen Capture = Off
+  Use Screen Size = On
+  White Background = On
+END
+>print
+>hide /CONTOUR: Contour 2, view=/VIEW:View 1
+
+CONTOUR: Contour 3
+  Apply Instancing Transform = On
+  Clip Contour = Off
+  Colour Map = Default Colour Map
+  Colour Scale = Linear
+  Colour Variable = Pressure
+  Colour Variable Boundary Values = Hybrid
+  Constant Contour Colour = Off
+  Contour Range = Local
+  Culling Mode = No Culling
+  Domain List = /DOMAIN GROUP:All Domains
+  Draw Contours = On
+  Font = Sans Serif
+  Fringe Fill = On
+  Instancing Transform = /DEFAULT INSTANCE TRANSFORM:Default Transform
+  Lighting = On
+  Line Colour = 0, 0, 0
+  Line Colour Mode = Default
+  Line Width = 1
+  Location List = /PLANE:Plane 1
+  Max = 0.0 [K]
+  Min = 0.0 [K]
+  Number of Contours = 11
+  Show Numbers = Off
+  Specular Lighting = On
+  Surface Drawing = Smooth Shading
+  Text Colour = 0, 0, 0
+  Text Colour Mode = Default
+  Text Height = 0.024
+  Transparency = 0.0
+  Use Face Values = Off
+  Value List = 0 [K],1 [K]
+  Visibility = On
+  OBJECT VIEW TRANSFORM: 
+    Apply Reflection = Off
+    Apply Rotation = Off
+    Apply Scale = Off
+    Apply Translation = Off
+    Principal Axis = Z
+    Reflection Plane Option = XY Plane
+    Rotation Angle = 0.0 [degree]
+    Rotation Axis From = 0 [m], 0 [m], 0 [m]
+    Rotation Axis To = 0 [m], 0 [m], 0 [m]
+    Rotation Axis Type = Principal Axis
+    Scale Vector = 1 , 1 , 1
+    Translation Vector = 0 [m], 0 [m], 0 [m]
+    X = 0.0 [m]
+    Y = 0.0 [m]
+    Z = 0.0 [m]
+  END
+END
+
+VIEW:View 1
+  Camera Mode = User Specified
+  CAMERA:
+    Option = Pivot Point and Quaternion
+    Pivot Point = 0, 1.30967e-10, -2.0653e-05
+    Scale = 4.93543
+    Pan = 0, 0
+    Rotation Quaternion = -0.707107, 0, 0, 0.707107
+  END
+
+END
+
+> update
+
+>show /CONTOUR: Contour 2, view=/VIEW:View 1
+
+HARDCOPY:
+  Antialiasing = On
+  Hardcopy Filename = J:\ST\AW\fa\fa1\result\P1.png
+  Hardcopy Format = png
+  Hardcopy Tolerance = 0.0001
+  Image Height = 600
+  Image Scale = 100
+  Image Width = 600
+  JPEG Image Quality = 80
+  Screen Capture = Off
+  Use Screen Size = On
+  White Background = On
+END
+>print

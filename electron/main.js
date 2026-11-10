@@ -327,14 +327,7 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
   };
 });
 
-ipcMain.handle("client:open-project", async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: "打开 Program Studio 工程",
-    buttonLabel: "打开工程",
-    properties: ["openDirectory"],
-  });
-  if (result.canceled || !result.filePaths[0]) return null;
-  const projectDirectory = path.resolve(result.filePaths[0]);
+async function readProjectDirectory(projectDirectory) {
   const manifestPath = path.join(projectDirectory, "project.json");
   const launchPath = path.join(projectDirectory, "launch.json");
   const parametersPath = path.join(projectDirectory, "parameters.json");
@@ -375,6 +368,26 @@ ipcMain.handle("client:open-project", async () => {
     outputs: JSON.parse(outputsSource),
     files,
   };
+}
+
+function defaultProjectDirectory() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "default-project")
+    : path.resolve(currentDirectory, "..", "default-project");
+}
+
+ipcMain.handle("client:open-project", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "打开 Program Studio 工程",
+    buttonLabel: "打开工程",
+    properties: ["openDirectory"],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  return readProjectDirectory(path.resolve(result.filePaths[0]));
+});
+
+ipcMain.handle("client:open-default-project", async () => {
+  return readProjectDirectory(defaultProjectDirectory());
 });
 
 ipcMain.handle("client:create-run-workspace", async (_event, projectPath) => {

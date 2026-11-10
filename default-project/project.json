@@ -1,0 +1,61 @@
+{
+  "schema": "program-studio-folder-project",
+  "schemaVersion": 4,
+  "name": "fa1 标准执行示例",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "launchFile": "launch.json",
+  "parameterFile": "parameters.json",
+  "outputFile": "outputs.json",
+  "files": [
+    {
+      "path": "files/CFX1.ccl",
+      "roles": [
+        "input"
+      ],
+      "relativePath": "files/CFX1.ccl"
+    },
+    {
+      "path": "files/Post.cse",
+      "roles": [
+        "input"
+      ],
+      "relativePath": "files/Post.cse"
+    },
+    {
+      "path": "files/Mechanical_Thermal.py",
+      "roles": [
+        "input"
+      ],
+      "relativePath": "files/Mechanical_Thermal.py"
+    },
+    {
+      "path": "files/Mechanical_Structural-2019.py",
+      "roles": [
+        "input"
+      ],
+      "relativePath": "files/Mechanical_Structural-2019.py"
+    },
+    {
+      "path": "files/workbench.wbjn",
+      "roles": [
+        "input"
+      ],
+      "relativePath": "files/workbench.wbjn"
+    },
+    {
+      "path": "files/Stress_Envelope_Summary.txt",
+      "roles": [
+        "output-reference"
+      ],
+      "relativePath": "files/Stress_Envelope_Summary.txt"
+    },
+    {
+      "path": "files/ResultManifest.txt",
+      "roles": [
+        "output-reference"
+      ],
+      "relativePath": "files/ResultManifest.txt"
+    }
+  ]
+}

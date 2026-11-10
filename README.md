@@ -32,8 +32,15 @@ npm run dev
 
 `npm run dev` 会启动 Vite 开发服务器并打开 Electron 桌面窗口。
 
+客户端启动后会自动打开仓库中的 `default-project`。需要根据 `testData` 重新生成默认工程时运行：
+
+```bash
+npm run default:create
+```
+
 常用快捷键：
 
+- `Ctrl+N`：新建空白工程
 - `Ctrl+O`：导入文件
 - `Ctrl+Shift+O`：打开工程
 - `Ctrl+S`：保存工程并更新已修改的来源文件

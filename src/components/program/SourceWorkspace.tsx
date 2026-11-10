@@ -22,6 +22,7 @@ interface SourceWorkspaceProps {
   onLoadExample: () => void;
   onLocateShortcut: () => void;
   onMoveFile: (previousPath: string, nextPath: string) => void;
+  onNewProject: () => void;
   onOpenFiles: () => void;
   onOpenProject: () => void;
   onSelectionChange: (range: SourceRange) => void;
@@ -41,6 +42,7 @@ export function SourceWorkspace({
   onLoadExample,
   onLocateShortcut,
   onMoveFile,
+  onNewProject,
   onOpenFiles,
   onOpenProject,
   onSelectionChange,
@@ -96,9 +98,13 @@ export function SourceWorkspace({
             <span className="empty-mark">
               <FileIcon />
             </span>
-            <strong>打开一个工作区</strong>
-            <p>导入文本文件，在原文中选择内容并绑定输入或输出参数。</p>
+            <strong>新建或打开工程</strong>
+            <p>创建空白工程，或导入文本文件并绑定输入输出参数。</p>
             <div className="empty-actions">
+              <button onClick={onNewProject} type="button">
+                <AddIcon />
+                新建工程
+              </button>
               <button onClick={onOpenFiles} type="button">
                 <AddIcon />
                 导入文本文件
@@ -111,7 +117,7 @@ export function SourceWorkspace({
                 打开工程
               </button>
               <button onClick={onLoadExample} type="button">
-                加载标准示例
+                打开默认测试工程
               </button>
             </div>
           </div>

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node scripts/dev-client.mjs",
     "client": "npm run build && electron .",
+    "default:create": "node scripts/create-default-project.mjs",
     "package": "npm run build && electron-builder",
     "package:dir": "npm run build && electron-builder --dir",
     "build": "tsc --noEmit && vite build",
@@ -47,6 +48,12 @@
       "dist/**/*",
       "electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "default-project",
+        "to": "default-project"
+      }
     ],
     "win": {
       "target": [

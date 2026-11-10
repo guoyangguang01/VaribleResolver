@@ -1,0 +1,2598 @@
+{
+  "bindings": [
+    {
+      "name": "CFX速度云图",
+      "value": "#UCW_PRJ_DIR#\\result\\V1.png",
+      "parameterType": "text",
+      "defaultValue": "#UCW_PRJ_DIR#\\result\\V1.png",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/ResultManifest.txt",
+      "locator": {
+        "kind": "delimited",
+        "rowIndex": 1,
+        "separator": " = ",
+        "fieldIndex": 1
+      },
+      "outputName": "ResultManifest"
+    },
+    {
+      "name": "CFX温度云图",
+      "value": "#UCW_PRJ_DIR#\\result\\T1.png",
+      "parameterType": "text",
+      "defaultValue": "#UCW_PRJ_DIR#\\result\\T1.png",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/ResultManifest.txt",
+      "locator": {
+        "kind": "delimited",
+        "rowIndex": 2,
+        "separator": " = ",
+        "fieldIndex": 1
+      },
+      "outputName": "ResultManifest"
+    },
+    {
+      "name": "CFX压力云图",
+      "value": "#UCW_PRJ_DIR#\\result\\P1.png",
+      "parameterType": "text",
+      "defaultValue": "#UCW_PRJ_DIR#\\result\\P1.png",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/ResultManifest.txt",
+      "locator": {
+        "kind": "delimited",
+        "rowIndex": 3,
+        "separator": " = ",
+        "fieldIndex": 1
+      },
+      "outputName": "ResultManifest"
+    },
+    {
+      "name": "变形云图",
+      "value": "#UCW_PRJ_DIR#\\result\\TotalDeform_Result.png",
+      "parameterType": "text",
+      "defaultValue": "#UCW_PRJ_DIR#\\result\\TotalDeform_Result.png",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/ResultManifest.txt",
+      "locator": {
+        "kind": "delimited",
+        "rowIndex": 4,
+        "separator": " = ",
+        "fieldIndex": 1
+      },
+      "outputName": "ResultManifest"
+    },
+    {
+      "name": "CFX材料名",
+      "value": "zhengqi",
+      "parameterType": "text",
+      "defaultValue": "zhengqi",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 296,
+        "startColumnIndex": 12,
+        "endRowIndex": 296,
+        "endColumnIndex": 19
+      }
+    },
+    {
+      "name": "最大绝对压力（MPa）",
+      "value": "6",
+      "parameterType": "number",
+      "defaultValue": "6",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 307,
+        "startColumnIndex": 36,
+        "endRowIndex": 307,
+        "endColumnIndex": 37
+      }
+    },
+    {
+      "name": "最大取值点",
+      "value": "100",
+      "parameterType": "number",
+      "defaultValue": "100",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 308,
+        "startColumnIndex": 25,
+        "endRowIndex": 308,
+        "endColumnIndex": 28
+      }
+    },
+    {
+      "name": "最大温度（K）",
+      "value": "600",
+      "parameterType": "number",
+      "defaultValue": "600",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 309,
+        "startColumnIndex": 30,
+        "endRowIndex": 309,
+        "endColumnIndex": 33
+      }
+    },
+    {
+      "name": "最小绝对压力（MPa）",
+      "value": "3.6",
+      "parameterType": "number",
+      "defaultValue": "3.6",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 310,
+        "startColumnIndex": 36,
+        "endRowIndex": 310,
+        "endColumnIndex": 39
+      }
+    },
+    {
+      "name": "最小温度（K）",
+      "value": "300",
+      "parameterType": "number",
+      "defaultValue": "300",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 311,
+        "startColumnIndex": 30,
+        "endRowIndex": 311,
+        "endColumnIndex": 33
+      }
+    },
+    {
+      "name": "初始时间（s）",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 332,
+        "startColumnIndex": 13,
+        "endRowIndex": 332,
+        "endColumnIndex": 14
+      }
+    },
+    {
+      "name": "总时长（s）",
+      "value": "0.0",
+      "parameterType": "number",
+      "defaultValue": "0.04",
+      "unit": "s",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 336,
+        "startColumnIndex": 19,
+        "endRowIndex": 336,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "时间步长（s）",
+      "value": "0.01",
+      "parameterType": "number",
+      "defaultValue": "0.01",
+      "unit": "s",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 340,
+        "startColumnIndex": 18,
+        "endRowIndex": 340,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "入口温度（K）",
+      "value": "539",
+      "parameterType": "number",
+      "defaultValue": "539.15",
+      "unit": "K",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 359,
+        "startColumnIndex": 30,
+        "endRowIndex": 359,
+        "endColumnIndex": 33
+      }
+    },
+    {
+      "name": "入口温度单位",
+      "value": "5",
+      "parameterType": "text",
+      "defaultValue": "K",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 359,
+        "startColumnIndex": 35,
+        "endRowIndex": 359,
+        "endColumnIndex": 36
+      }
+    },
+    {
+      "name": "入口相对压力",
+      "value": "Expression 1",
+      "parameterType": "text",
+      "defaultValue": "Expression 1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 363,
+        "startColumnIndex": 30,
+        "endRowIndex": 363,
+        "endColumnIndex": 42
+      }
+    },
+    {
+      "name": "出口流量（kg/s）",
+      "value": "12.5",
+      "parameterType": "number",
+      "defaultValue": "12.5",
+      "unit": "kg/s",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 378,
+        "startColumnIndex": 27,
+        "endRowIndex": 378,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "浮力参考密度（kg/m3）",
+      "value": "24",
+      "parameterType": "number",
+      "defaultValue": "0.02",
+      "unit": "kg/(m^3)",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 401,
+        "startColumnIndex": 37,
+        "endRowIndex": 401,
+        "endColumnIndex": 39
+      }
+    },
+    {
+      "name": "重力X分量",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "m/（s^2）",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 402,
+        "startColumnIndex": 30,
+        "endRowIndex": 402,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "重力Y分量",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "m/（s^2）",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 403,
+        "startColumnIndex": 30,
+        "endRowIndex": 403,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "重力Z分量",
+      "value": "-9.81",
+      "parameterType": "number",
+      "defaultValue": "-9.81",
+      "unit": "m/（s^2）",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 404,
+        "startColumnIndex": 30,
+        "endRowIndex": 404,
+        "endColumnIndex": 35
+      }
+    },
+    {
+      "name": "参考压力（atm）",
+      "value": "1",
+      "parameterType": "number",
+      "defaultValue": "1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 417,
+        "startColumnIndex": 29,
+        "endRowIndex": 417,
+        "endColumnIndex": 30
+      }
+    },
+    {
+      "name": "流体材料",
+      "value": "zhengqi",
+      "parameterType": "text",
+      "defaultValue": "zhengqi",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 421,
+        "startColumnIndex": 17,
+        "endRowIndex": 421,
+        "endColumnIndex": 24
+      }
+    },
+    {
+      "name": "湍流模型",
+      "value": "k epsilon",
+      "parameterType": "text",
+      "defaultValue": "k epsilon",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 438,
+        "startColumnIndex": 17,
+        "endRowIndex": 438,
+        "endColumnIndex": 26
+      }
+    },
+    {
+      "name": "初始化速度U分量",
+      "value": "-35",
+      "parameterType": "number",
+      "defaultValue": "-35",
+      "unit": "m/s",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 453,
+        "startColumnIndex": 14,
+        "endRowIndex": 453,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "初始化速度V分量",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "m/s",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 454,
+        "startColumnIndex": 14,
+        "endRowIndex": 454,
+        "endColumnIndex": 15
+      }
+    },
+    {
+      "name": "初始化速度W分量",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "m/s",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 455,
+        "startColumnIndex": 14,
+        "endRowIndex": 455,
+        "endColumnIndex": 15
+      }
+    },
+    {
+      "name": "初始化相对压力（MPa）",
+      "value": "4",
+      "parameterType": "number",
+      "defaultValue": "4",
+      "unit": "MPa",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 459,
+        "startColumnIndex": 30,
+        "endRowIndex": 459,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "初始化温度（K）",
+      "value": "539",
+      "parameterType": "number",
+      "defaultValue": "539.15",
+      "unit": "K",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 463,
+        "startColumnIndex": 24,
+        "endRowIndex": 463,
+        "endColumnIndex": 27
+      }
+    },
+    {
+      "name": "初始化温度单位",
+      "value": "5",
+      "parameterType": "text",
+      "defaultValue": "K",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 463,
+        "startColumnIndex": 29,
+        "endRowIndex": 463,
+        "endColumnIndex": 30
+      }
+    },
+    {
+      "name": "输出结果时间间隔（S）",
+      "value": "0.02",
+      "parameterType": "number",
+      "defaultValue": "0.05",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 517,
+        "startColumnIndex": 24,
+        "endRowIndex": 517,
+        "endColumnIndex": 28
+      }
+    },
+    {
+      "name": "最大迭代步数",
+      "value": "10",
+      "parameterType": "number",
+      "defaultValue": "10",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 527,
+        "startColumnIndex": 44,
+        "endRowIndex": 527,
+        "endColumnIndex": 47
+      }
+    },
+    {
+      "name": "最小迭代步数",
+      "value": "1",
+      "parameterType": "number",
+      "defaultValue": "1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 528,
+        "startColumnIndex": 44,
+        "endRowIndex": 528,
+        "endColumnIndex": 45
+      }
+    },
+    {
+      "name": "体积力X分量",
+      "value": "0 [kg m^-2 s^-2]",
+      "parameterType": "text",
+      "defaultValue": "0 [kg m^-2 s^-2]",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 476,
+        "startColumnIndex": 42,
+        "endRowIndex": 476,
+        "endColumnIndex": 58
+      }
+    },
+    {
+      "name": "体积力Y分量",
+      "value": "0 [kg m^-2 s^-2]",
+      "parameterType": "text",
+      "defaultValue": "0 [kg m^-2 s^-2]",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 477,
+        "startColumnIndex": 42,
+        "endRowIndex": 477,
+        "endColumnIndex": 58
+      }
+    },
+    {
+      "name": "体积力Z分量",
+      "value": "- Density * accel",
+      "parameterType": "text",
+      "defaultValue": "Density * accelx5",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/CFX1.ccl",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 478,
+        "startColumnIndex": 42,
+        "endRowIndex": 478,
+        "endColumnIndex": 59
+      }
+    },
+    {
+      "name": "CFX速度云图路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\result\\V1.pn",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\result/V1.png",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Post.cse",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 147,
+        "startColumnIndex": 22,
+        "endRowIndex": 147,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "CFX温度云图路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\result\\T1.pn",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\result/T1.png",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Post.cse",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 232,
+        "startColumnIndex": 22,
+        "endRowIndex": 232,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "CFX压力云图路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\result\\P1.pn",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\result/P1.png",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Post.cse",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 316,
+        "startColumnIndex": 22,
+        "endRowIndex": 316,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "阀体材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "material1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 5,
+        "startColumnIndex": 25,
+        "endRowIndex": 5,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "阀盖材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "material1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 12,
+        "startColumnIndex": 25,
+        "endRowIndex": 12,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "阀杆材料",
+      "value": "materi",
+      "parameterType": "text",
+      "defaultValue": "material3",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 19,
+        "startColumnIndex": 25,
+        "endRowIndex": 19,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "阀座材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "material1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 26,
+        "startColumnIndex": 25,
+        "endRowIndex": 26,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "右闸板材料",
+      "value": "materi",
+      "parameterType": "text",
+      "defaultValue": "material4",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 33,
+        "startColumnIndex": 25,
+        "endRowIndex": 33,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "左闸板材料",
+      "value": "materi",
+      "parameterType": "text",
+      "defaultValue": "material4",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 40,
+        "startColumnIndex": 25,
+        "endRowIndex": 40,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "导向件材料",
+      "value": "mate",
+      "parameterType": "text",
+      "defaultValue": "material2",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 47,
+        "startColumnIndex": 25,
+        "endRowIndex": 47,
+        "endColumnIndex": 29
+      }
+    },
+    {
+      "name": "球面轴材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "material1",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 54,
+        "startColumnIndex": 25,
+        "endRowIndex": 54,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "初始温度（C）",
+      "value": "180",
+      "parameterType": "number",
+      "defaultValue": "180",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 66,
+        "startColumnIndex": 54,
+        "endRowIndex": 66,
+        "endColumnIndex": 57
+      }
+    },
+    {
+      "name": "结束时间（s）",
+      "value": "0.0",
+      "parameterType": "number",
+      "defaultValue": "@CFX1[In].总时长（s）",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 74,
+        "startColumnIndex": 48,
+        "endRowIndex": 74,
+        "endColumnIndex": 51
+      }
+    },
+    {
+      "name": "时间步长（s）",
+      "value": "0.02",
+      "parameterType": "number",
+      "defaultValue": "0.02",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 78,
+        "startColumnIndex": 53,
+        "endRowIndex": 78,
+        "endColumnIndex": 57
+      }
+    },
+    {
+      "name": "传热系数（W/m2/C）",
+      "value": "10",
+      "parameterType": "number",
+      "defaultValue": "10",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 86,
+        "startColumnIndex": 64,
+        "endRowIndex": 86,
+        "endColumnIndex": 66
+      }
+    },
+    {
+      "name": "环境温度（C）",
+      "value": "20",
+      "parameterType": "number",
+      "defaultValue": "20",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 87,
+        "startColumnIndex": 67,
+        "endRowIndex": 87,
+        "endColumnIndex": 69
+      }
+    },
+    {
+      "name": "是否禁用对流换热",
+      "value": "False",
+      "parameterType": "boolean",
+      "defaultValue": "False",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 88,
+        "startColumnIndex": 25,
+        "endRowIndex": 88,
+        "endColumnIndex": 30
+      }
+    },
+    {
+      "name": "横倾角度",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].横倾角度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 105,
+        "startColumnIndex": 52,
+        "endRowIndex": 105,
+        "endColumnIndex": 53
+      }
+    },
+    {
+      "name": "纵倾角度",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].纵倾角度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Thermal.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 112,
+        "startColumnIndex": 52,
+        "endRowIndex": 112,
+        "endColumnIndex": 53
+      }
+    },
+    {
+      "name": "CFX表达式脚本路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\CFX_setup_0.ccl\"",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\GSP\\CFX_setup_0.ccl",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 5,
+        "startColumnIndex": 12,
+        "endRowIndex": 5,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "表达式1",
+      "value": "Expression 1 = 3.6[MPa] + 2.4[MPa] * (1 - 2 * abs(mod(t / 0.5[s], 1) - 0.5))",
+      "parameterType": "text",
+      "defaultValue": "Expression 1 = 3.6[MPa] + 2.4[MPa] * (1 - 2 * abs(mod(t / 0.5[s], 1) - 0.5))",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 7,
+        "startColumnIndex": 6,
+        "endRowIndex": 7,
+        "endColumnIndex": 82
+      }
+    },
+    {
+      "name": "表达式2",
+      "value": "Expression 2 = 12.5[kg s^-1] * (1 - 2 * abs(mod(t / 0.5[s], 1) - 0.5))",
+      "parameterType": "text",
+      "defaultValue": "Expression 2 = 12.5[kg s^-1] * (1 - 2 * abs(mod(t / 0.5[s], 1) - 0.5))",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 8,
+        "startColumnIndex": 6,
+        "endRowIndex": 8,
+        "endColumnIndex": 76
+      }
+    },
+    {
+      "name": "表达式3",
+      "value": "accelx = -30 * sin(pi * t / 0.04 [s]) * max(sin(pi * t / 0.04 [s]), 0) [m s^-2]",
+      "parameterType": "text",
+      "defaultValue": "accelx = -30 * sin(pi * t / 0.04 [s]) * max(sin(pi * t / 0.04 [s]), 0) [m s^-2]",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 9,
+        "startColumnIndex": 6,
+        "endRowIndex": 9,
+        "endColumnIndex": 85
+      }
+    },
+    {
+      "name": "表达式4",
+      "value": "accelx15 = -15 * sin(pi * t / 0.04 [s]) * max(sin(pi * t / 0.04 [s]), 0) [m s^-2]",
+      "parameterType": "text",
+      "defaultValue": "accelx15 = -15 * sin(pi * t / 0.04 [s]) * max(sin(pi * t / 0.04 [s]), 0) [m s^-2]",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 10,
+        "startColumnIndex": 6,
+        "endRowIndex": 10,
+        "endColumnIndex": 87
+      }
+    },
+    {
+      "name": "表达式5",
+      "value": "accelx5 = 5 * max(sin(pi * t / 0.4 [s]), 0) [m s^-2]\"",
+      "parameterType": "text",
+      "defaultValue": "accelx5 = 5 * sin(pi * t / 0.5 [s]) * max(sin(pi * t / 0.5 [s]), 0) [m s^-2]",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 11,
+        "startColumnIndex": 6,
+        "endRowIndex": 11,
+        "endColumnIndex": 82
+      }
+    },
+    {
+      "name": "表达式6",
+      "value": "a = 0\"",
+      "parameterType": "text",
+      "defaultValue": "a = 0",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 12,
+        "startColumnIndex": 6,
+        "endRowIndex": 12,
+        "endColumnIndex": 82
+      }
+    },
+    {
+      "name": "表达式7",
+      "value": "a = 0\"",
+      "parameterType": "text",
+      "defaultValue": "a = 0",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 13,
+        "startColumnIndex": 6,
+        "endRowIndex": 13,
+        "endColumnIndex": 82
+      }
+    },
+    {
+      "name": "读取工程路径",
+      "value": "G:\\AutoWrap_SVN\\moxing\\fa\\fa1.wbp",
+      "parameterType": "path",
+      "defaultValue": "#UCW_EXE_DIR#\\moxing\\fa\\fa1.wbpj",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 61,
+        "startColumnIndex": 17,
+        "endRowIndex": 61,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料名",
+      "value": "022Cr17Ni12Mo2N",
+      "parameterType": "text",
+      "defaultValue": "022Cr17Ni12Mo2N",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 73,
+        "startColumnIndex": 21,
+        "endRowIndex": 73,
+        "endColumnIndex": 36
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料密度",
+      "value": "7930",
+      "parameterType": "number",
+      "defaultValue": "7930",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 80,
+        "startColumnIndex": 14,
+        "endRowIndex": 80,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料热导率",
+      "value": "16",
+      "parameterType": "number",
+      "defaultValue": "16",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 88,
+        "startColumnIndex": 14,
+        "endRowIndex": 88,
+        "endColumnIndex": 16
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料比热容",
+      "value": "500",
+      "parameterType": "number",
+      "defaultValue": "500",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 96,
+        "startColumnIndex": 14,
+        "endRowIndex": 96,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "导向件材料名称",
+      "value": "CF3M",
+      "parameterType": "text",
+      "defaultValue": "CF3M",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 99,
+        "startColumnIndex": 21,
+        "endRowIndex": 99,
+        "endColumnIndex": 25
+      }
+    },
+    {
+      "name": "导向件材料密度",
+      "value": "7900",
+      "parameterType": "number",
+      "defaultValue": "7900",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 106,
+        "startColumnIndex": 14,
+        "endRowIndex": 106,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "导向件材料热导率",
+      "value": "15.5",
+      "parameterType": "number",
+      "defaultValue": "15.5",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 114,
+        "startColumnIndex": 14,
+        "endRowIndex": 114,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "导向件材料比热容",
+      "value": "500",
+      "parameterType": "number",
+      "defaultValue": "500",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 122,
+        "startColumnIndex": 14,
+        "endRowIndex": 122,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "阀杆材料名称",
+      "value": "GH2132",
+      "parameterType": "text",
+      "defaultValue": "GH2132",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 125,
+        "startColumnIndex": 21,
+        "endRowIndex": 125,
+        "endColumnIndex": 27
+      }
+    },
+    {
+      "name": "阀杆材料密度",
+      "value": "7930",
+      "parameterType": "number",
+      "defaultValue": "7930",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 132,
+        "startColumnIndex": 14,
+        "endRowIndex": 132,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "阀杆材料热导率",
+      "value": "14.2",
+      "parameterType": "number",
+      "defaultValue": "14.2",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 140,
+        "startColumnIndex": 14,
+        "endRowIndex": 140,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "阀杆材料比热容",
+      "value": "460",
+      "parameterType": "number",
+      "defaultValue": "460",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 148,
+        "startColumnIndex": 14,
+        "endRowIndex": 148,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "闸板材料名称",
+      "value": "GH4169",
+      "parameterType": "text",
+      "defaultValue": "GH4169",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 151,
+        "startColumnIndex": 21,
+        "endRowIndex": 151,
+        "endColumnIndex": 27
+      }
+    },
+    {
+      "name": "闸板材料密度",
+      "value": "8240",
+      "parameterType": "number",
+      "defaultValue": "8240",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 158,
+        "startColumnIndex": 14,
+        "endRowIndex": 158,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "闸板材料热导率",
+      "value": "11.7",
+      "parameterType": "number",
+      "defaultValue": "11.7",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 166,
+        "startColumnIndex": 14,
+        "endRowIndex": 166,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "闸板材料比热容",
+      "value": "435",
+      "parameterType": "number",
+      "defaultValue": "435",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 174,
+        "startColumnIndex": 14,
+        "endRowIndex": 174,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料名_1",
+      "value": "022Cr17Ni12Mo2N",
+      "parameterType": "text",
+      "defaultValue": "@workbench[In].阀体阀盖阀座材料名",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 193,
+        "startColumnIndex": 21,
+        "endRowIndex": 193,
+        "endColumnIndex": 36
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料密度_1",
+      "value": "7930",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].阀体阀盖阀座材料密度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 200,
+        "startColumnIndex": 14,
+        "endRowIndex": 200,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料热膨胀系数",
+      "value": "1.5E-05",
+      "parameterType": "number",
+      "defaultValue": "1.5E-05",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 211,
+        "startColumnIndex": 14,
+        "endRowIndex": 211,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料杨氏模量",
+      "value": "195000000000",
+      "parameterType": "number",
+      "defaultValue": "195000000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 219,
+        "startColumnIndex": 14,
+        "endRowIndex": 219,
+        "endColumnIndex": 26
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料泊松比",
+      "value": "0.3",
+      "parameterType": "number",
+      "defaultValue": "0.3",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 222,
+        "startColumnIndex": 14,
+        "endRowIndex": 222,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料屈服强度",
+      "value": "835000000",
+      "parameterType": "number",
+      "defaultValue": "835000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 230,
+        "startColumnIndex": 14,
+        "endRowIndex": 230,
+        "endColumnIndex": 23
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料切线模量",
+      "value": "2000000000",
+      "parameterType": "number",
+      "defaultValue": "2000000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 233,
+        "startColumnIndex": 14,
+        "endRowIndex": 233,
+        "endColumnIndex": 24
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料拉伸屈服强度",
+      "value": "835000000",
+      "parameterType": "number",
+      "defaultValue": "835000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 243,
+        "startColumnIndex": 14,
+        "endRowIndex": 243,
+        "endColumnIndex": 23
+      }
+    },
+    {
+      "name": "阀体阀盖阀座材料抗拉极限强度",
+      "value": "1087000000",
+      "parameterType": "number",
+      "defaultValue": "1087000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 247,
+        "startColumnIndex": 14,
+        "endRowIndex": 247,
+        "endColumnIndex": 24
+      }
+    },
+    {
+      "name": "导向件材料名称_1",
+      "value": "CF3M",
+      "parameterType": "text",
+      "defaultValue": "@workbench[In].导向件材料名称",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 250,
+        "startColumnIndex": 21,
+        "endRowIndex": 250,
+        "endColumnIndex": 25
+      }
+    },
+    {
+      "name": "导向件材料密度_1",
+      "value": "7900",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].导向件材料密度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 257,
+        "startColumnIndex": 14,
+        "endRowIndex": 257,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "导向件材料热膨胀系数",
+      "value": "1.5E-05",
+      "parameterType": "number",
+      "defaultValue": "1.5E-05",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 268,
+        "startColumnIndex": 14,
+        "endRowIndex": 268,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "导向件材料杨氏模量",
+      "value": "193000000000",
+      "parameterType": "number",
+      "defaultValue": "193000000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 276,
+        "startColumnIndex": 14,
+        "endRowIndex": 276,
+        "endColumnIndex": 26
+      }
+    },
+    {
+      "name": "导向件材料泊松比",
+      "value": "0.3",
+      "parameterType": "number",
+      "defaultValue": "0.3",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 279,
+        "startColumnIndex": 14,
+        "endRowIndex": 279,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "导向件材料屈服强度",
+      "value": "1.44E+08",
+      "parameterType": "number",
+      "defaultValue": "1.44E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 287,
+        "startColumnIndex": 14,
+        "endRowIndex": 287,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "导向件材料切线模量（Pa）",
+      "value": "2E+09",
+      "parameterType": "number",
+      "defaultValue": "2E+09",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 290,
+        "startColumnIndex": 14,
+        "endRowIndex": 290,
+        "endColumnIndex": 19
+      }
+    },
+    {
+      "name": "导向件材料拉伸屈服强度（Pa）",
+      "value": "1.44E+08",
+      "parameterType": "number",
+      "defaultValue": "1.44E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 300,
+        "startColumnIndex": 14,
+        "endRowIndex": 300,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "导向件材料抗拉极限强度（Pa）",
+      "value": "2.67E+08",
+      "parameterType": "number",
+      "defaultValue": "2.67E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 304,
+        "startColumnIndex": 14,
+        "endRowIndex": 304,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "阀杆材料名称_1",
+      "value": "GH2132",
+      "parameterType": "text",
+      "defaultValue": "@workbench[In].阀杆材料名称",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 307,
+        "startColumnIndex": 21,
+        "endRowIndex": 307,
+        "endColumnIndex": 27
+      }
+    },
+    {
+      "name": "阀杆材料密度_1",
+      "value": "7930",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].阀杆材料密度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 314,
+        "startColumnIndex": 14,
+        "endRowIndex": 314,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "阀杆材料热膨胀系数",
+      "value": "1.55E-05",
+      "parameterType": "number",
+      "defaultValue": "1.55E-05",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 325,
+        "startColumnIndex": 14,
+        "endRowIndex": 325,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "阀杆材料杨氏模量",
+      "value": "200000000000",
+      "parameterType": "number",
+      "defaultValue": "200000000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 333,
+        "startColumnIndex": 14,
+        "endRowIndex": 333,
+        "endColumnIndex": 26
+      }
+    },
+    {
+      "name": "阀杆材料泊松比",
+      "value": "0.3",
+      "parameterType": "number",
+      "defaultValue": "0.3",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 336,
+        "startColumnIndex": 14,
+        "endRowIndex": 336,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "阀杆材料屈服强度",
+      "value": "2.7E+08",
+      "parameterType": "number",
+      "defaultValue": "2.7E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 344,
+        "startColumnIndex": 14,
+        "endRowIndex": 344,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "阀杆材料切线模量",
+      "value": "2E+09",
+      "parameterType": "number",
+      "defaultValue": "2E+09",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 347,
+        "startColumnIndex": 14,
+        "endRowIndex": 347,
+        "endColumnIndex": 19
+      }
+    },
+    {
+      "name": "阀杆材料拉伸屈服强度",
+      "value": "2.7E+08",
+      "parameterType": "number",
+      "defaultValue": "2.7E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 357,
+        "startColumnIndex": 14,
+        "endRowIndex": 357,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "阀杆材料抗拉极限强度",
+      "value": "5E+08",
+      "parameterType": "number",
+      "defaultValue": "5E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 361,
+        "startColumnIndex": 14,
+        "endRowIndex": 361,
+        "endColumnIndex": 19
+      }
+    },
+    {
+      "name": "闸板材料名称_1",
+      "value": "GH4169",
+      "parameterType": "text",
+      "defaultValue": "@workbench[In].闸板材料名称",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 364,
+        "startColumnIndex": 21,
+        "endRowIndex": 364,
+        "endColumnIndex": 27
+      }
+    },
+    {
+      "name": "闸板材料密度_1",
+      "value": "8240",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].闸板材料密度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 371,
+        "startColumnIndex": 14,
+        "endRowIndex": 371,
+        "endColumnIndex": 18
+      }
+    },
+    {
+      "name": "闸板材料热膨胀系数",
+      "value": "1.45E-05",
+      "parameterType": "number",
+      "defaultValue": "1.45E-05",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 382,
+        "startColumnIndex": 14,
+        "endRowIndex": 382,
+        "endColumnIndex": 22
+      }
+    },
+    {
+      "name": "闸板材料杨氏模量",
+      "value": "203000000000",
+      "parameterType": "number",
+      "defaultValue": "203000000000",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 390,
+        "startColumnIndex": 14,
+        "endRowIndex": 390,
+        "endColumnIndex": 26
+      }
+    },
+    {
+      "name": "闸板材料泊松比",
+      "value": "0.3",
+      "parameterType": "number",
+      "defaultValue": "0.3",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 393,
+        "startColumnIndex": 14,
+        "endRowIndex": 393,
+        "endColumnIndex": 17
+      }
+    },
+    {
+      "name": "闸板材料屈服强度",
+      "value": "2.7E+08",
+      "parameterType": "number",
+      "defaultValue": "2.7E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 401,
+        "startColumnIndex": 14,
+        "endRowIndex": 401,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "闸板材料切线模量",
+      "value": "2E+09",
+      "parameterType": "number",
+      "defaultValue": "2E+09",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 404,
+        "startColumnIndex": 14,
+        "endRowIndex": 404,
+        "endColumnIndex": 19
+      }
+    },
+    {
+      "name": "闸板材料拉伸屈服强度",
+      "value": "2.7E+08",
+      "parameterType": "number",
+      "defaultValue": "2.7E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 414,
+        "startColumnIndex": 14,
+        "endRowIndex": 414,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "闸板材料抗拉极限强度",
+      "value": "5E+08",
+      "parameterType": "number",
+      "defaultValue": "5E+08",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 418,
+        "startColumnIndex": 14,
+        "endRowIndex": 418,
+        "endColumnIndex": 19
+      }
+    },
+    {
+      "name": "横倾角度",
+      "value": "0)",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 458,
+        "startColumnIndex": 19,
+        "endRowIndex": 458,
+        "endColumnIndex": 21
+      }
+    },
+    {
+      "name": "纵倾角度",
+      "value": "0)",
+      "parameterType": "number",
+      "defaultValue": "0",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 459,
+        "startColumnIndex": 21,
+        "endRowIndex": 459,
+        "endColumnIndex": 23
+      }
+    },
+    {
+      "name": "坐标系脚本路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\jiaobencfx_coord.ccl",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\GSP\\jiaobencfx_coord.ccl",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 485,
+        "startColumnIndex": 12,
+        "endRowIndex": 485,
+        "endColumnIndex": 52
+      }
+    },
+    {
+      "name": "坐标系脚本路径_1",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\jiaobencfx_coord.ccl",
+      "parameterType": "path",
+      "defaultValue": "@workbench[In].坐标系脚本路径",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 492,
+        "startColumnIndex": 21,
+        "endRowIndex": 492,
+        "endColumnIndex": 61
+      }
+    },
+    {
+      "name": "CFX表达式脚本路径_1",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\CFX_setup_0.ccl",
+      "parameterType": "path",
+      "defaultValue": "@workbench[In].CFX表达式脚本路径",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 497,
+        "startColumnIndex": 21,
+        "endRowIndex": 497,
+        "endColumnIndex": 56
+      }
+    },
+    {
+      "name": "CFX设置脚本路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\CFX1.ccl\"",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\GSP\\CFX1.ccl",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 502,
+        "startColumnIndex": 21,
+        "endRowIndex": 502,
+        "endColumnIndex": 60
+      }
+    },
+    {
+      "name": "CFD后处理脚本路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\Post.cse",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\GSP/Post.cse",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 517,
+        "startColumnIndex": 22,
+        "endRowIndex": 517,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "Mec传热脚本路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\Mechanical_Thermal.py",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\GSP/Mechanical_Thermal.py",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 532,
+        "startColumnIndex": 24,
+        "endRowIndex": 532,
+        "endColumnIndex": 65
+      }
+    },
+    {
+      "name": "Mec结构脚本路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\GSP\\Mechanical_Structural-2019.py",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\GSP/Mechanical_Structural-2019.py",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 546,
+        "startColumnIndex": 27,
+        "endRowIndex": 546,
+        "endColumnIndex": 76
+      }
+    },
+    {
+      "name": "工程保存路径",
+      "value": "G:\\AutoWrap_SVN\\moxing\\result\\fa",
+      "parameterType": "path",
+      "defaultValue": "#UCW_EXE_DIR#\\moxing\\result/fa1.wbpj",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/workbench.wbjn",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 557,
+        "startColumnIndex": 16,
+        "endRowIndex": 557,
+        "endColumnIndex": 48
+      }
+    },
+    {
+      "name": "阀体材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].阀体材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 5,
+        "startColumnIndex": 25,
+        "endRowIndex": 5,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "阀盖材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].阀盖材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 12,
+        "startColumnIndex": 25,
+        "endRowIndex": 12,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "阀杆材料",
+      "value": "materi",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].阀杆材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 19,
+        "startColumnIndex": 25,
+        "endRowIndex": 19,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "阀座材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].阀座材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 26,
+        "startColumnIndex": 25,
+        "endRowIndex": 26,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "右闸板材料",
+      "value": "materi",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].右闸板材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 33,
+        "startColumnIndex": 25,
+        "endRowIndex": 33,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "左闸板材料",
+      "value": "materi",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].左闸板材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 40,
+        "startColumnIndex": 25,
+        "endRowIndex": 40,
+        "endColumnIndex": 31
+      }
+    },
+    {
+      "name": "导向件材料",
+      "value": "mate",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].导向件材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 47,
+        "startColumnIndex": 25,
+        "endRowIndex": 47,
+        "endColumnIndex": 29
+      }
+    },
+    {
+      "name": "球面轴材料",
+      "value": "material1\"",
+      "parameterType": "text",
+      "defaultValue": "@Mechanical_Thermal[In].球面轴材料",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 54,
+        "startColumnIndex": 25,
+        "endRowIndex": 54,
+        "endColumnIndex": 40
+      }
+    },
+    {
+      "name": "结束时间",
+      "value": "0.0",
+      "parameterType": "number",
+      "defaultValue": "@CFX1[In].总时长（s）",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 61,
+        "startColumnIndex": 45,
+        "endRowIndex": 61,
+        "endColumnIndex": 48
+      }
+    },
+    {
+      "name": "时间步长",
+      "value": "0.02",
+      "parameterType": "number",
+      "defaultValue": "0.02",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 64,
+        "startColumnIndex": 46,
+        "endRowIndex": 64,
+        "endColumnIndex": 50
+      }
+    },
+    {
+      "name": "加速度文件路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\Reso",
+      "parameterType": "path",
+      "defaultValue": "#UCW_RES_DIR#\\31acc.txt",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 105,
+        "startColumnIndex": 14,
+        "endRowIndex": 105,
+        "endColumnIndex": 34
+      }
+    },
+    {
+      "name": "是否警用加速度",
+      "value": "False",
+      "parameterType": "boolean",
+      "defaultValue": "False",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 340,
+        "startColumnIndex": 25,
+        "endRowIndex": 340,
+        "endColumnIndex": 30
+      }
+    },
+    {
+      "name": "变形云图路径",
+      "value": "J:\\ST\\AW\\fa\\fa1\\result\\TotalDeform_Result.png",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\result\\TotalDeform_Result.png",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 368,
+        "startColumnIndex": 14,
+        "endRowIndex": 368,
+        "endColumnIndex": 59
+      }
+    },
+    {
+      "name": "应力结果极值分布",
+      "value": "J:\\ST\\AW\\fa\\fa1\\Stress_Envelope_Summary.txt\"",
+      "parameterType": "path",
+      "defaultValue": "#UCW_PRJ_DIR#\\Stress_Envelope_Summary.txt",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 373,
+        "startColumnIndex": 13,
+        "endRowIndex": 373,
+        "endColumnIndex": 63
+      }
+    },
+    {
+      "name": "横倾角度",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].横倾角度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 81,
+        "startColumnIndex": 52,
+        "endRowIndex": 81,
+        "endColumnIndex": 53
+      }
+    },
+    {
+      "name": "纵倾角度",
+      "value": "0",
+      "parameterType": "number",
+      "defaultValue": "@workbench[In].纵倾角度",
+      "unit": "",
+      "description": "",
+      "direction": "input",
+      "filePath": "files/Mechanical_Structural-2019.py",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 88,
+        "startColumnIndex": 52,
+        "endRowIndex": 88,
+        "endColumnIndex": 53
+      }
+    },
+    {
+      "name": "全局最大应力",
+      "value": "3.31996114e+08",
+      "parameterType": "number",
+      "defaultValue": "3.31996114e+08",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 2,
+        "startColumnIndex": 18,
+        "endRowIndex": 2,
+        "endColumnIndex": 32
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "全局最小应力",
+      "value": "3.80313897e+01",
+      "parameterType": "number",
+      "defaultValue": "3.80313897e+01",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 2,
+        "startColumnIndex": 33,
+        "endRowIndex": 2,
+        "endColumnIndex": 47
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "阀体最大应力",
+      "value": ".31996114e+08\t",
+      "parameterType": "number",
+      "defaultValue": "3.31996114e+08",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 3,
+        "startColumnIndex": 24,
+        "endRowIndex": 3,
+        "endColumnIndex": 38
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "阀体最小应力",
+      "value": ".09913080e+07\t",
+      "parameterType": "number",
+      "defaultValue": "2.09913080e+07",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 3,
+        "startColumnIndex": 39,
+        "endRowIndex": 3,
+        "endColumnIndex": 53
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "导向件最大应力",
+      "value": "4.99731394e+07",
+      "parameterType": "number",
+      "defaultValue": "4.99731394e+07",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 4,
+        "startColumnIndex": 31,
+        "endRowIndex": 4,
+        "endColumnIndex": 45
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "导向件最小应力",
+      "value": "3.39935984e+07",
+      "parameterType": "number",
+      "defaultValue": "3.39935984e+07",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 4,
+        "startColumnIndex": 46,
+        "endRowIndex": 4,
+        "endColumnIndex": 60
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "阀杆最大应力",
+      "value": "1.13946751e+08",
+      "parameterType": "number",
+      "defaultValue": "1.13946751e+08",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 5,
+        "startColumnIndex": 24,
+        "endRowIndex": 5,
+        "endColumnIndex": 38
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "阀杆最小应力",
+      "value": "6.04236062e+07",
+      "parameterType": "number",
+      "defaultValue": "6.04236062e+07",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 5,
+        "startColumnIndex": 39,
+        "endRowIndex": 5,
+        "endColumnIndex": 53
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "闸板最大应力",
+      "value": "1.13912566e+08",
+      "parameterType": "number",
+      "defaultValue": "1.13912566e+08",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 6,
+        "startColumnIndex": 25,
+        "endRowIndex": 6,
+        "endColumnIndex": 39
+      },
+      "outputName": "Stress_Envelope_Summary"
+    },
+    {
+      "name": "闸板最小应力",
+      "value": "7.83454501e+07",
+      "parameterType": "number",
+      "defaultValue": "7.83454501e+07",
+      "unit": "",
+      "description": "",
+      "direction": "output",
+      "filePath": "files/Stress_Envelope_Summary.txt",
+      "locator": {
+        "kind": "rowColumn",
+        "startRowIndex": 6,
+        "startColumnIndex": 40,
+        "endRowIndex": 6,
+        "endColumnIndex": 54
+      },
+      "outputName": "Stress_Envelope_Summary"
+    }
+  ]
+}

@@ -142,6 +142,8 @@ ProjectName/
 
 点击“打开工程”并选择工程目录，即可恢复全部文件、参数和程序启动配置继续修改。工程不会封装为单个 JSON 文件。
 
+“新建工程”或 `Ctrl+N` 会清空当前工作区并回到未命名工程。若当前工程包含未保存的更改，客户端会先确认是否放弃这些更改。
+
 “保存”和“另存为”行为不同：
 
 - “保存”或 `Ctrl+S` 会更新工程目录，并把已修改的内容回写到导入时的原文件。
@@ -159,14 +161,14 @@ ProjectName/
 - 标准输出和标准错误各限制为 1 MB，程序执行不设置超时。
 - 导入文件最大为 8 MB，不限制扩展名，但必须是可识别的文本内容。
 
-## fa1 标准示例
+## 默认 fa1 测试工程
 
-程序启动台文件栏中的“加载 fa1 标准示例”会加载：
+客户端启动时自动打开 `default-project`。这是一个完整的 schemaVersion 4 工程目录，包含：
 
-- `testData/fa1.config`：完整参数来源，共 152 个参数，其中 138 个输入、14 个输出。
-- `testData/fa1-example.execution.json`：程序路径、参数和工作目录，以及 7 个文件的路径映射。
-- `testData/CFX1.ccl`、`Post.cse`、`Mechanical_Thermal.py`、`Mechanical_Structural-2019.py`、`workbench.wbjn`：模块输入文件。
-- `testData/fa1-example/Stress_Envelope_Summary.txt`：按原脚本制表符格式生成的结果摘要。
-- `testData/fa1-example/ResultManifest.txt`：4 个自由输出结果的路径清单。
+- `project.json`、`launch.json`、`parameters.json` 和 `outputs.json`。
+- `files/` 下的 7 个独立工程文件。
+- 从 `fa1.config` 转换得到的 152 个参数，其中 138 个输入、14 个输出。
 
-示例使用完整 Windows 路径登记文件。参数不会在示例 JSON 中重复维护，加载时直接读取 `fa1.config`。示例会将 `dataType` 映射为文本、数值、布尔或路径类型，并导入默认值和可提取的物理单位。
+开发环境直接读取仓库中的 `default-project`，安装后读取应用资源目录中的 `default-project`。默认工程文件和路径均指向自身 `files/` 目录，不读取 `testData`。修改默认工程后点击“保存”会转为“另存为”，避免写回内置工程。
+
+`testData` 仅用于开发和测试，以及通过 `npm run default:create` 重新生成默认工程，不包含在安装包中。

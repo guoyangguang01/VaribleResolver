@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("programStudio", {
   saveProject: (payload, options) =>
     ipcRenderer.invoke("client:save-project", payload, options),
   openProject: () => ipcRenderer.invoke("client:open-project"),
+  openDefaultProject: () =>
+    ipcRenderer.invoke("client:open-default-project"),
   createRunWorkspace: (projectPath) =>
     ipcRenderer.invoke("client:create-run-workspace", projectPath),
   runProgram: (request) =>

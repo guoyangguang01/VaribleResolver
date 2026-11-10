@@ -54,7 +54,6 @@ import {
   sourceFlavorFromFilename,
   type SourceRange,
 } from "../lib/variables";
-import { buildFa1Example } from "../lib/fa1Example";
 import {
   parseProjectFolder,
   serializeProjectFolder,
@@ -80,7 +79,29 @@ import {
 } from "../lib/programWorkspace";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const EMPTY_PROJECT_NAME = "未命名工程";
+const DEFAULT_LOCATOR_MODE_VALUES: LocatorModeValues = {
+  startRowIndex: 1,
+  startColumnIndex: 0,
+  endRowIndex: 1,
+  endColumnIndex: 0,
+  fieldIndex: 0,
+  captureGroup: 0,
+  occurrence: 0,
+};
+const EMPTY_PROJECT_REVISION = projectRevision({
+  name: EMPTY_PROJECT_NAME,
+  program: "",
+  arguments: "",
+  workingDirectory: "",
+  launchMode: "direct",
+  outputs: undefined,
+  files: [],
+  bindings: [],
+});
 type NoticeTone = "neutral" | "success" | "error";
+type PendingProjectAction = "new" | "open";
+type ParsedProjectFolder = ReturnType<typeof parseProjectFolder>;
 
 type LeftSidebarTab = "files" | "parameters";
 
@@ -111,8 +132,9 @@ export function useProgramWorkspace() {
     resolvedTheme,
   } = useThemePreference();
   const [files, setFiles] = useState<LaunchFile[]>([]);
-  const [projectName, setProjectName] = useState("未命名工程");
+  const [projectName, setProjectName] = useState(EMPTY_PROJECT_NAME);
   const [projectPath, setProjectPath] = useState<string | null>(null);
+  const [isBuiltInProject, setIsBuiltInProject] = useState(false);
   const [projectRelativeFilePaths, setProjectRelativeFilePaths] =
     useState<Record<string, string>>({});
   const [projectCreatedAt, setProjectCreatedAt] = useState<string | null>(
@@ -139,15 +161,7 @@ export function useProgramWorkspace() {
     null,
   );
   const [locatorModeValues, setLocatorModeValues] =
-    useState<LocatorModeValues>({
-      startRowIndex: 1,
-      startColumnIndex: 0,
-      endRowIndex: 1,
-      endColumnIndex: 0,
-      fieldIndex: 0,
-      captureGroup: 0,
-      occurrence: 0,
-    });
+    useState<LocatorModeValues>(() => ({ ...DEFAULT_LOCATOR_MODE_VALUES }));
   const [parameterQuery, setParameterQuery] = useState("");
   const [parameterDirection, setParameterDirection] = useState<
     "all" | LaunchBindingDirection
@@ -176,24 +190,17 @@ export function useProgramWorkspace() {
   const [inspectorTab, setInspectorTab] =
     useState<InspectorTab>("launch");
   const [inspectorDrawerOpen, setInspectorDrawerOpen] = useState(false);
-  const [confirmOpenProject, setConfirmOpenProject] = useState(false);
-  const [savedRevision, setSavedRevision] = useState(() =>
-    projectRevision({
-      name: "未命名工程",
-      program: "",
-      arguments: "",
-      workingDirectory: "",
-      launchMode: "direct",
-      outputs: undefined,
-      files: [],
-      bindings: [],
-    }),
+  const [pendingProjectAction, setPendingProjectAction] =
+    useState<PendingProjectAction | null>(null);
+  const [savedRevision, setSavedRevision] = useState(
+    EMPTY_PROJECT_REVISION,
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<SourceEditorHandle>(null);
   const editorContextMenuRef = useRef<HTMLDivElement>(null);
   const themeMenuRef = useRef<HTMLDetailsElement>(null);
+  const defaultProjectLoadStartedRef = useRef(false);
   const desktopApi = window.programStudio;
   const currentRevision = useMemo(
     () =>
@@ -807,56 +814,187 @@ export function useProgramWorkspace() {
     }
   };
 
-  const loadFa1Example = () => {
-    try {
-      const example = buildFa1Example();
-      setFiles(example.files);
-      setActiveFilePath(example.files[0]?.path ?? null);
-      setSelection({ start: 0, end: 0 });
-      setBindings(example.bindings);
-      const firstExampleKey = example.bindings[0]
-        ? parameterKey(example.bindings[0])
-        : null;
-      setSelectedParameterId(firstExampleKey);
-      setLocatedBindingId(firstExampleKey);
-      if (example.bindings[0]) {
-        scrollParameterRow(firstExampleKey!);
-      }
-      setProgram(example.program);
-      setArgumentText(example.arguments);
-      setWorkingDirectory(example.workingDirectory);
-      setLaunchMode(example.launchMode ?? "direct");
-      setProjectOutputs(undefined);
-      setOutputs([]);
-      setLeftSidebarTab("parameters");
-      setInspectorTab("parameter");
-      const firstFile = example.files[0];
-      const firstBinding = firstFile
-        ? example.bindings.find(
-            (binding): binding is FileLaunchBinding =>
-              isFileBinding(binding) &&
-              binding.filePath === firstFile.path,
-          )
-        : null;
-      if (firstFile && firstBinding) {
-        const resolved = resolveLaunchBinding(
-          firstFile.content,
-          firstBinding.locator,
-        );
-        setPendingRange({
-          filePath: firstFile.path,
-          range: { start: resolved.start, end: resolved.end },
-          select: false,
-        });
-      }
+  const startNewProject = () => {
+    if (isRunning) {
       setNotice({
-        tone: "success",
-        text: `已加载“${example.name}”：${example.files.length} 个路径文件，${example.bindings.length} 个标准参数。`,
+        tone: "error",
+        text: "程序运行中，无法新建工程。请等待当前运行结束。",
       });
+      return;
+    }
+    setFiles([]);
+    setProjectName(EMPTY_PROJECT_NAME);
+    setProjectPath(null);
+    setIsBuiltInProject(false);
+    setProjectRelativeFilePaths({});
+    setProjectCreatedAt(null);
+    setActiveFilePath(null);
+    setSelection({ start: 0, end: 0 });
+    setBindings([]);
+    setProgram("");
+    setArgumentText("");
+    setWorkingDirectory("");
+    setLaunchMode("direct");
+    setProjectOutputs(undefined);
+    setLocatorMode("auto");
+    setEditingBindingId(null);
+    setLocatorModeValues({ ...DEFAULT_LOCATOR_MODE_VALUES });
+    setParameterQuery("");
+    setParameterDirection("all");
+    setCollapsedTreeKeys(new Set());
+    setLocatedBindingId(null);
+    setSelectedParameterId(null);
+    setOutputs([]);
+    setRuntimeResult(null);
+    setPendingRange(null);
+    setEditorContextMenu(null);
+    setLeftSidebarTab("files");
+    setInspectorTab("launch");
+    setInspectorDrawerOpen(false);
+    setPendingProjectAction(null);
+    setSavedRevision(EMPTY_PROJECT_REVISION);
+    setNotice({
+      tone: "success",
+      text: "已新建空白工程。导入文件或添加参数后保存，即可创建工程目录。",
+    });
+  };
+
+  const requestNewProject = () => {
+    if (isRunning) {
+      setNotice({
+        tone: "error",
+        text: "程序运行中，无法新建工程。请等待当前运行结束。",
+      });
+      return;
+    }
+    if (isDirty) {
+      setPendingProjectAction("new");
+      return;
+    }
+    startNewProject();
+  };
+
+  const applyLoadedProject = (
+    parsed: ParsedProjectFolder,
+    folderPath: string | null,
+    builtIn: boolean,
+    noticeText: string,
+  ) => {
+    const loadedFiles = builtIn
+      ? parsed.files.map((file) => ({
+          path: file.path,
+          name: file.name,
+          content: file.content,
+          flavor: file.flavor,
+          size: file.size,
+        }))
+      : parsed.files;
+    setProjectName(parsed.manifest.name);
+    setProjectPath(folderPath);
+    setIsBuiltInProject(builtIn);
+    setProjectRelativeFilePaths(
+      Object.fromEntries(
+        parsed.manifest.files.map((file, index) => [
+          parsed.files[index]?.path ?? file.path,
+          file.relativePath,
+        ]),
+      ),
+    );
+    setProjectCreatedAt(parsed.manifest.createdAt);
+    setFiles(loadedFiles);
+    setBindings(parsed.bindings);
+    const firstKey = parsed.bindings[0]
+      ? parameterKey(parsed.bindings[0])
+      : null;
+    setSelectedParameterId(firstKey);
+    setLocatedBindingId(firstKey);
+    if (parsed.bindings[0]) {
+      scrollParameterRow(firstKey!);
+    }
+    setProgram(parsed.launch.program);
+    setArgumentText(parsed.launch.arguments);
+    setWorkingDirectory(parsed.launch.workingDirectory);
+    setLaunchMode(parsed.launch.mode);
+    setProjectOutputs(parsed.outputs);
+    setActiveFilePath(loadedFiles[0]?.path ?? null);
+    setSelection({ start: 0, end: 0 });
+    setOutputs([]);
+    setRuntimeResult(null);
+    setEditingBindingId(null);
+    setLeftSidebarTab("parameters");
+    setInspectorTab("parameter");
+    setSavedRevision(
+      projectRevision({
+        name: parsed.manifest.name,
+        program: parsed.launch.program,
+        arguments: parsed.launch.arguments,
+        workingDirectory: parsed.launch.workingDirectory,
+        launchMode: parsed.launch.mode,
+        outputs: parsed.outputs,
+        files: loadedFiles,
+        bindings: parsed.bindings,
+      }),
+    );
+    const firstFile = loadedFiles[0];
+    const firstBinding = firstFile
+      ? parsed.bindings.find(
+          (binding): binding is FileLaunchBinding =>
+            isFileBinding(binding) &&
+            binding.filePath === firstFile.path,
+        )
+      : null;
+    if (firstFile && firstBinding) {
+      const resolved = resolveLaunchBinding(
+        firstFile.content,
+        firstBinding.locator,
+      );
+      setPendingRange({
+        filePath: firstFile.path,
+        range: { start: resolved.start, end: resolved.end },
+        select: false,
+      });
+    }
+    setNotice({ tone: "success", text: noticeText });
+  };
+
+  const loadDefaultProject = async () => {
+    if (!desktopApi) {
+      setNotice({
+        tone: "error",
+        text: "Electron 桌面接口不可用，无法打开默认测试工程。",
+      });
+      return;
+    }
+    try {
+      const raw = await desktopApi.openDefaultProject();
+      const parsed = parseProjectFolder(raw);
+      const folderPath =
+        raw &&
+        typeof raw === "object" &&
+        "folderPath" in raw &&
+        typeof raw.folderPath === "string"
+          ? raw.folderPath
+          : null;
+      applyLoadedProject(
+        parsed,
+        folderPath,
+        true,
+        `已打开默认测试工程“${parsed.manifest.name}”：${parsed.files.length} 个路径文件，${parsed.bindings.length} 个标准参数。`,
+      );
     } catch (error) {
       setNotice({ tone: "error", text: errorMessage(error) });
     }
   };
+
+  const loadFa1Example = () => {
+    void loadDefaultProject();
+  };
+
+  useEffect(() => {
+    if (defaultProjectLoadStartedRef.current) return;
+    defaultProjectLoadStartedRef.current = true;
+    void loadDefaultProject();
+  }, []);
 
   const saveProjectFolder = async (
     requestedMode: "auto" | "save" | "saveAs" = "auto",
@@ -871,13 +1009,15 @@ export function useProgramWorkspace() {
     }
     try {
       const mode =
-        requestedMode === "save" && !projectPath
+        isBuiltInProject
           ? "saveAs"
-          : requestedMode === "auto"
-            ? projectPath
-              ? "save"
-              : "saveAs"
-            : requestedMode;
+          : requestedMode === "save" && !projectPath
+            ? "saveAs"
+            : requestedMode === "auto"
+              ? projectPath
+                ? "save"
+                : "saveAs"
+              : requestedMode;
       const payload: ProjectFolderPayload = serializeProjectFolder({
         name: projectName,
         program,
@@ -909,6 +1049,7 @@ export function useProgramWorkspace() {
       if (!saved) return null;
       setProjectName(payload.manifest.name);
       setProjectPath(saved.path);
+      setIsBuiltInProject(false);
       setProjectRelativeFilePaths(
         Object.fromEntries(
           payload.manifest.files.map((file) => [
@@ -992,74 +1133,12 @@ export function useProgramWorkspace() {
         typeof raw.folderPath === "string"
           ? raw.folderPath
           : null;
-      setProjectName(parsed.manifest.name);
-      setProjectPath(folderPath);
-      setProjectRelativeFilePaths(
-        Object.fromEntries(
-          parsed.manifest.files.map((file, index) => [
-            parsed.files[index]?.path ?? file.path,
-            file.relativePath,
-          ]),
-        ),
+      applyLoadedProject(
+        parsed,
+        folderPath,
+        false,
+        `已加载工程“${parsed.manifest.name}”：${parsed.files.length} 个文件，${parsed.bindings.length} 个参数。`,
       );
-      setProjectCreatedAt(parsed.manifest.createdAt);
-      setFiles(parsed.files);
-      setBindings(parsed.bindings);
-      const firstParsedKey = parsed.bindings[0]
-        ? parameterKey(parsed.bindings[0])
-        : null;
-      setSelectedParameterId(firstParsedKey);
-      setLocatedBindingId(firstParsedKey);
-      if (parsed.bindings[0]) {
-        scrollParameterRow(firstParsedKey!);
-      }
-      setProgram(parsed.launch.program);
-      setArgumentText(parsed.launch.arguments);
-      setWorkingDirectory(parsed.launch.workingDirectory);
-      setLaunchMode(parsed.launch.mode);
-      setProjectOutputs(parsed.outputs);
-      setActiveFilePath(parsed.files[0]?.path ?? null);
-      setSelection({ start: 0, end: 0 });
-      setOutputs([]);
-      setRuntimeResult(null);
-      setEditingBindingId(null);
-      setLeftSidebarTab("parameters");
-      setInspectorTab("parameter");
-      setSavedRevision(
-        projectRevision({
-          name: parsed.manifest.name,
-          program: parsed.launch.program,
-          arguments: parsed.launch.arguments,
-          workingDirectory: parsed.launch.workingDirectory,
-          launchMode: parsed.launch.mode,
-          outputs: parsed.outputs,
-          files: parsed.files,
-          bindings: parsed.bindings,
-        }),
-      );
-      const firstFile = parsed.files[0];
-      const firstBinding = firstFile
-        ? parsed.bindings.find(
-            (binding): binding is FileLaunchBinding =>
-              isFileBinding(binding) &&
-              binding.filePath === firstFile.path,
-          )
-        : null;
-      if (firstFile && firstBinding) {
-        const resolved = resolveLaunchBinding(
-          firstFile.content,
-          firstBinding.locator,
-        );
-        setPendingRange({
-          filePath: firstFile.path,
-          range: { start: resolved.start, end: resolved.end },
-          select: false,
-        });
-      }
-      setNotice({
-        tone: "success",
-        text: `已加载工程“${parsed.manifest.name}”：${parsed.files.length} 个文件，${parsed.bindings.length} 个参数。`,
-      });
     } catch (error) {
       setNotice({ tone: "error", text: errorMessage(error) });
     }
@@ -1695,10 +1774,24 @@ export function useProgramWorkspace() {
 
   const requestOpenProject = () => {
     if (isDirty) {
-      setConfirmOpenProject(true);
+      setPendingProjectAction("open");
       return;
     }
     void openProjectFolder();
+  };
+
+  const cancelPendingProjectAction = () => {
+    setPendingProjectAction(null);
+  };
+
+  const confirmPendingProjectAction = () => {
+    const action = pendingProjectAction;
+    setPendingProjectAction(null);
+    if (action === "new") {
+      startNewProject();
+    } else if (action === "open") {
+      void openProjectFolder();
+    }
   };
 
   const changeTheme = (preference: ThemePreference) => {
@@ -1710,6 +1803,11 @@ export function useProgramWorkspace() {
     const handleShortcut = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
+      if (key === "n" && !event.shiftKey) {
+        event.preventDefault();
+        requestNewProject();
+        return;
+      }
       if (key === "o") {
         event.preventDefault();
         if (event.shiftKey) {
@@ -1742,6 +1840,6 @@ export function useProgramWorkspace() {
 
 
   return {
-    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, confirmOpenProject, setConfirmOpenProject, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleAutoTokenRange, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterFileLabel, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestOpenProject, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
+    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleAutoTokenRange, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterFileLabel, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
   };
 }

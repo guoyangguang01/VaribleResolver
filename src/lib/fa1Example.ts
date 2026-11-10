@@ -71,6 +71,22 @@ const ASSETS: Record<string, string> = {
   "fa1-example/ResultManifest.txt": manifestSource,
 };
 
+const EXAMPLE_ROOT_PLACEHOLDER = "{{EXAMPLE_ROOT}}";
+
+function examplePath(root: string, relativePath: string): string {
+  const normalizedRoot = root.trim().replace(/[\\/]+$/, "");
+  const separator = normalizedRoot.includes("\\") ? "\\" : "/";
+  const normalizedRelativePath = relativePath
+    .trim()
+    .replace(/^[\\/]+/, "")
+    .replace(/[\\/]+/g, separator);
+  return `${normalizedRoot}${separator}${normalizedRelativePath}`;
+}
+
+function resolveExamplePath(value: string, root: string): string {
+  return value.replaceAll(EXAMPLE_ROOT_PLACEHOLDER, root);
+}
+
 function fa1ParameterType(dataType: number): LaunchParameterType {
   if (dataType === 1) return "number";
   if (dataType === 2) return "boolean";
@@ -82,7 +98,7 @@ function fa1Unit(value: string): string {
   return value.trim().match(/\[([^\]]+)\]\s*$/)?.[1] ?? "";
 }
 
-export function buildFa1Example(): Fa1Example {
+export function buildFa1Example(assetRoot: string): Fa1Example {
   const config = exampleConfig as ExampleExecutionConfig;
   const fa1Config = JSON.parse(fa1ConfigSource) as Fa1Config;
   const files = config.files.map((file) => {
@@ -90,19 +106,28 @@ export function buildFa1Example(): Fa1Example {
     if (content === undefined) {
       throw new Error(`示例资源不存在：${file.asset}`);
     }
-    return createLaunchFile(file.path, normalizeSourceText(content));
+    return createLaunchFile(
+      resolveExamplePath(file.path, assetRoot),
+      normalizeSourceText(content),
+    );
   });
   const filesByPath = new Map(files.map((file) => [file.path, file]));
   const modulePaths: Record<string, string> = {
-    "CFX1[In]": "C:\\Cases\\fa1\\CFX1.ccl",
-    "Post[In]": "C:\\Cases\\fa1\\Post.cse",
-    "Mechanical_Thermal[In]":
-      "C:\\Cases\\fa1\\Mechanical_Thermal.py",
-    "Mechanical_Structural-2019[In]":
-      "C:\\Cases\\fa1\\Mechanical_Structural-2019.py",
-    "workbench[In]": "C:\\Cases\\fa1\\workbench.wbjn",
-    "Stress_Envelope_Summary[Out]":
-      "C:\\Cases\\fa1\\Stress_Envelope_Summary.txt",
+    "CFX1[In]": examplePath(assetRoot, "CFX1.ccl"),
+    "Post[In]": examplePath(assetRoot, "Post.cse"),
+    "Mechanical_Thermal[In]": examplePath(
+      assetRoot,
+      "Mechanical_Thermal.py",
+    ),
+    "Mechanical_Structural-2019[In]": examplePath(
+      assetRoot,
+      "Mechanical_Structural-2019.py",
+    ),
+    "workbench[In]": examplePath(assetRoot, "workbench.wbjn"),
+    "Stress_Envelope_Summary[Out]": examplePath(
+      assetRoot,
+      "fa1-example/Stress_Envelope_Summary.txt",
+    ),
   };
   let freeParameterIndex = 0;
   const bindings = fa1Config.parameters.map((parameter) => {
@@ -110,7 +135,9 @@ export function buildFa1Example(): Fa1Example {
       parameter.direction === 0 ? "input" : "output";
     const name = parameter.name;
     if (parameter.moduleName === "自由参数") {
-      const file = filesByPath.get("C:\\Cases\\fa1\\ResultManifest.txt");
+      const file = filesByPath.get(
+        examplePath(assetRoot, "fa1-example/ResultManifest.txt"),
+      );
       if (!file) throw new Error("示例自由参数清单不存在。");
       freeParameterIndex += 1;
       return {
@@ -150,8 +177,8 @@ export function buildFa1Example(): Fa1Example {
   return {
     name: config.name,
     program: config.program,
-    arguments: config.arguments,
-    workingDirectory: config.workingDirectory,
+    arguments: resolveExamplePath(config.arguments, assetRoot),
+    workingDirectory: resolveExamplePath(config.workingDirectory, assetRoot),
     launchMode: "direct",
     files,
     bindings,

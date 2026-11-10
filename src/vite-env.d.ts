@@ -36,6 +36,7 @@ interface ProgramStudioApi {
     },
   ) => Promise<{ path: string; name: string } | null>;
   openProject: () => Promise<unknown | null>;
+  openDefaultProject: () => Promise<unknown>;
   createRunWorkspace: (
     projectPath: string,
   ) => Promise<{ runId: string; path: string }>;

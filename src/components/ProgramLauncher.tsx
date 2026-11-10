@@ -59,8 +59,7 @@ export default function ProgramLauncher() {
     setInspectorTab,
     inspectorDrawerOpen,
     setInspectorDrawerOpen,
-    confirmOpenProject,
-    setConfirmOpenProject,
+    pendingProjectAction,
     fileInputRef,
     editorRef,
     editorContextMenuRef,
@@ -85,7 +84,10 @@ export default function ProgramLauncher() {
     openFiles,
     loadFa1Example,
     saveProjectFolder,
+    requestNewProject,
     requestOpenProject,
+    cancelPendingProjectAction,
+    confirmPendingProjectAction,
     removeFile,
     moveFile,
     addBinding,
@@ -135,6 +137,7 @@ export default function ProgramLauncher() {
           isRunning={isRunning}
           onChangeProjectName={setProjectName}
           onChangeTheme={changeTheme}
+          onNewProject={requestNewProject}
           onOpenProject={requestOpenProject}
           onRun={() => void runProgram()}
           onSave={() => void saveProjectFolder("auto")}
@@ -223,6 +226,7 @@ export default function ProgramLauncher() {
             onLoadExample={loadFa1Example}
             onLocateShortcut={() => addBinding("input")}
             onMoveFile={moveFile}
+            onNewProject={requestNewProject}
             onOpenFiles={() => void openFiles()}
             onOpenProject={requestOpenProject}
             onSelectionChange={setSelection}
@@ -401,7 +405,7 @@ export default function ProgramLauncher() {
         </div>
       )}
 
-      {confirmOpenProject && (
+      {pendingProjectAction && (
         <div className="dialog-backdrop">
           <div
             aria-describedby="unsaved-project-description"
@@ -412,28 +416,34 @@ export default function ProgramLauncher() {
           >
             <div className="confirm-dialog-icon">!</div>
             <div>
-              <h2 id="unsaved-project-title">打开其他工程？</h2>
+              <h2 id="unsaved-project-title">
+                {pendingProjectAction === "new"
+                  ? "新建空白工程？"
+                  : "打开其他工程？"}
+              </h2>
               <p id="unsaved-project-description">
-                当前工程包含未保存的更改。继续打开其他工程会放弃这些更改。
+                当前工程包含未保存的更改。
+                {pendingProjectAction === "new"
+                  ? "新建工程会放弃这些更改。"
+                  : "继续打开其他工程会放弃这些更改。"}
               </p>
             </div>
             <div className="confirm-dialog-actions">
               <button
                 autoFocus
-                onClick={() => setConfirmOpenProject(false)}
+                onClick={cancelPendingProjectAction}
                 type="button"
               >
                 返回编辑
               </button>
               <button
                 className="is-danger"
-                onClick={() => {
-                  setConfirmOpenProject(false);
-                  void openProjectFolder();
-                }}
+                onClick={confirmPendingProjectAction}
                 type="button"
               >
-                放弃并打开
+                {pendingProjectAction === "new"
+                  ? "放弃并新建"
+                  : "放弃并打开"}
               </button>
             </div>
           </div>

@@ -1,0 +1,24 @@
+{
+  "outputs": [
+    {
+      "name": "ResultManifest",
+      "referenceFile": "files/ResultManifest.txt",
+      "runtimePath": "files/ResultManifest.txt",
+      "required": true,
+      "seed": "never",
+      "discovery": {
+        "type": "path"
+      }
+    },
+    {
+      "name": "Stress_Envelope_Summary",
+      "referenceFile": "files/Stress_Envelope_Summary.txt",
+      "runtimePath": "files/Stress_Envelope_Summary.txt",
+      "required": true,
+      "seed": "never",
+      "discovery": {
+        "type": "path"
+      }
+    }
+  ]
+}

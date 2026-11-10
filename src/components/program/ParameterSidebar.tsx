@@ -216,7 +216,7 @@ export function ParameterSidebar({
             onClick={onLoadExample}
             type="button"
           >
-            加载 fa1 标准示例
+            打开默认测试工程
           </button>
           <div className="runner-file-list">
             {files.length === 0 && (

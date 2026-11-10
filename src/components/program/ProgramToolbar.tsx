@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import type { ResolvedTheme, ThemePreference } from "../../lib/theme";
 import {
+  AddIcon,
   FolderIcon,
   MonitorIcon,
   MoonIcon,
@@ -22,6 +23,7 @@ interface ProgramToolbarProps {
   themePreference: ThemePreference;
   onChangeProjectName: (value: string) => void;
   onChangeTheme: (preference: ThemePreference) => void;
+  onNewProject: () => void;
   onOpenProject: () => void;
   onRun: () => void;
   onSave: () => void;
@@ -42,6 +44,7 @@ export function ProgramToolbar({
   themePreference,
   onChangeProjectName,
   onChangeTheme,
+  onNewProject,
   onOpenProject,
   onRun,
   onSave,
@@ -88,6 +91,14 @@ export function ProgramToolbar({
           type="button"
         >
           <PanelIcon />
+        </button>
+        <button
+          onClick={onNewProject}
+          title="新建空白工程 (Ctrl+N)"
+          type="button"
+        >
+          <AddIcon />
+          <span>新建工程</span>
         </button>
         <button
           onClick={onOpenProject}

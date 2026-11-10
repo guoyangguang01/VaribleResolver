@@ -69,6 +69,31 @@ async function addParameterFromContextMenu(
     .click();
 }
 
+test.describe("default fa1 project", () => {
+  test.use({ startWithDefaultProject: true });
+
+  test("opens the fa1 test case as an existing project on startup", async ({
+    page,
+  }) => {
+    const runner = page.locator("#program-runner");
+
+    await expect(runner.getByLabel("工程名称")).toHaveValue(
+      "fa1 标准执行示例",
+    );
+    await expect(runner.getByLabel("有未保存的更改")).toHaveCount(0);
+    await expect(runner.locator(".runner-project-path")).toContainText(
+      path.join(process.cwd(), "default-project"),
+    );
+    await expect(runner.locator(".runner-binding")).toHaveCount(152);
+    await expect(runner.locator(".runner-notice")).toContainText(
+      "已打开默认测试工程",
+    );
+
+    await runner.getByRole("tab", { name: "资源" }).click();
+    await expect(runner.locator(".runner-file-item")).toHaveCount(7);
+  });
+});
+
 test("creates input and output bindings from the editor context menu", async ({
   page,
 }) => {
@@ -244,7 +269,7 @@ test("loads the fa1 standard example with path files and row-column parameters",
   page,
 }) => {
   const runner = page.locator("#program-runner");
-  await runner.getByRole("button", { name: "加载 fa1 标准示例" }).click();
+  await runner.locator(".runner-load-example").click();
 
   await runner.getByRole("tab", { name: "资源" }).click();
   await expect(runner.locator(".runner-file-item")).toHaveCount(7);
@@ -268,9 +293,14 @@ test("loads the fa1 standard example with path files and row-column parameters",
       .first(),
   ).toBeVisible();
   await runner.getByRole("tab", { name: "资源" }).click();
+  const exampleRoot = path.join(
+    process.cwd(),
+    "default-project",
+    "files",
+  );
   await expect(
     runner.locator(".runner-file-select").filter({
-      hasText: "C:\\Cases\\fa1\\Stress_Envelope_Summary.txt",
+      hasText: path.join(exampleRoot, "Stress_Envelope_Summary.txt"),
     }),
   ).toBeVisible();
   await runner
@@ -287,6 +317,15 @@ test("loads the fa1 standard example with path files and row-column parameters",
   ).toHaveValue(
     "C:\\Program Files\\ANSYS Inc\\v195\\Framework\\bin\\Win64\\RunWB2.exe",
   );
+  await expect(
+    runner
+      .locator(".runner-field")
+      .filter({ hasText: "工作目录" })
+      .locator("input"),
+  ).toHaveValue(exampleRoot);
+  await expect(
+    runner.locator(".runner-inspector-scroll textarea"),
+  ).toHaveValue(`-B -R "${path.join(exampleRoot, "workbench.wbjn")}"`);
   await expect(runner.locator(".runner-notice")).toContainText(
     "7 个路径文件，152 个标准参数",
   );
@@ -345,7 +384,7 @@ test("locates and highlights the matching parameter row from an editor selection
   page,
 }) => {
   const runner = page.locator("#program-runner");
-  await runner.getByRole("button", { name: "加载 fa1 标准示例" }).click();
+  await runner.locator(".runner-load-example").click();
 
   await selectInRunner(
     page,
@@ -370,7 +409,7 @@ test("double-clicking a highlighted value locates its parameter row", async ({
   page,
 }) => {
   const runner = page.locator("#program-runner");
-  await runner.getByRole("button", { name: "加载 fa1 标准示例" }).click();
+  await runner.locator(".runner-load-example").click();
 
   const highlight = runner
     .locator(".runner-editor-shell .cm-variable-highlight")
@@ -688,6 +727,46 @@ test("confirms before replacing a project with unsaved changes", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "返回编辑" }).click();
   await expect(runner.getByLabel("工程名称")).toHaveValue("修改后的工程");
+});
+
+test("creates a new empty project after confirming unsaved changes", async ({
+  page,
+}) => {
+  const runner = page.locator("#program-runner");
+  const projectActions = runner.locator(".runner-project-actions");
+
+  await runner.locator(".runner-load-example").click();
+  await runner.getByLabel("工程名称").fill("修改后的默认工程");
+  await expect(runner.getByLabel("有未保存的更改")).toBeVisible();
+
+  await page.keyboard.press("Control+n");
+  const dialog = page.getByRole("dialog", { name: "新建空白工程？" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "返回编辑" }).click();
+  await expect(runner.getByLabel("工程名称")).toHaveValue("修改后的默认工程");
+
+  await projectActions.getByRole("button", { name: "新建工程" }).click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "放弃并新建" }).click();
+
+  await expect(runner.getByLabel("工程名称")).toHaveValue("未命名工程");
+  await expect(runner.getByLabel("有未保存的更改")).toHaveCount(0);
+  await expect(runner.locator(".runner-project-path")).toHaveText(
+    "尚未保存到工程目录",
+  );
+  await expect(runner.locator(".runner-file-item")).toHaveCount(0);
+  await expect(runner.locator(".runner-editor-empty")).toBeVisible();
+  await expect(runner.locator(".runner-notice")).toContainText(
+    "已新建空白工程",
+  );
+
+  await runner.getByRole("tab", { name: "启动配置" }).click();
+  await expect(
+    runner
+      .locator(".runner-field")
+      .filter({ hasText: "程序路径" })
+      .locator("input"),
+  ).toHaveValue("");
 });
 
 test("adapts the workspace controls at the minimum desktop width", async ({
