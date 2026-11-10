@@ -16,7 +16,6 @@ import {
   type LaunchFile,
   type LaunchParameterType,
 } from "./launcher.ts";
-import { normalizeSourceText } from "./variables.ts";
 
 interface ExampleAsset {
   path: string;
@@ -106,10 +105,7 @@ export function buildFa1Example(assetRoot: string): Fa1Example {
     if (content === undefined) {
       throw new Error(`示例资源不存在：${file.asset}`);
     }
-    return createLaunchFile(
-      resolveExamplePath(file.path, assetRoot),
-      normalizeSourceText(content),
-    );
+    return createLaunchFile(resolveExamplePath(file.path, assetRoot), content);
   });
   const filesByPath = new Map(files.map((file) => [file.path, file]));
   const modulePaths: Record<string, string> = {

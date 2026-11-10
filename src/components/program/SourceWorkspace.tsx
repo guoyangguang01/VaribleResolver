@@ -82,7 +82,7 @@ export function SourceWorkspace({
         {activeFile ? (
           <SourceEditor
             ariaLabel={`程序文件 ${activeFile.name}`}
-            flavor={activeFile.flavor}
+            filename={activeFile.name}
             highlightRanges={highlightRanges}
             onChange={onChange}
             onEditorContextMenu={onEditorContextMenu}

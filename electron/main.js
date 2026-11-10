@@ -43,7 +43,7 @@ async function readTextFile(filePath) {
   return {
     path: absolutePath,
     name: path.basename(absolutePath),
-    content: buffer.toString("utf8").replace(/\r\n?/g, "\n"),
+    content: buffer.toString("utf8"),
     size: stat.size,
     modifiedAt: stat.mtimeMs,
   };
@@ -200,10 +200,13 @@ ipcMain.handle("client:update-files", async (_event, files) => {
 
   const written = [];
   for (const target of targets) {
-    const usesCrLf = target.original.includes(Buffer.from("\r\n"));
-    let content = usesCrLf
-      ? target.content.replace(/\r\n?/g, "\n").replace(/\n/g, "\r\n")
-      : target.content.replace(/\r\n?/g, "\n");
+    const originalText = target.original.toString("utf8");
+    const lineEnding = /\r\n|\r|\n/.exec(originalText)?.[0] ?? "\n";
+    const normalizedContent = target.content.replace(/\r\n?/g, "\n");
+    let content =
+      lineEnding === "\n"
+        ? normalizedContent
+        : normalizedContent.replace(/\n/g, lineEnding);
     const hasUtf8Bom =
       target.original[0] === 0xef &&
       target.original[1] === 0xbb &&

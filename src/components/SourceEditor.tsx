@@ -27,7 +27,7 @@ import {
   lineNumbers,
   placeholder,
 } from "@codemirror/view";
-import type { SourceFlavor, SourceRange } from "../lib/variables";
+import type { SourceRange } from "../lib/variables";
 import type { ResolvedTheme } from "../lib/theme";
 import type {
   SourceEditorChange,
@@ -48,7 +48,7 @@ export interface EditorContextMenuRequest {
 
 interface SourceEditorProps {
   value: string;
-  flavor: SourceFlavor;
+  filename: string;
   highlightRanges: SourceRange[];
   theme: ResolvedTheme;
   ariaLabel?: string;
@@ -166,15 +166,16 @@ function editorThemeExtensions(theme: ResolvedTheme): Extension[] {
     : [editorTheme(theme)];
 }
 
-function languageFor(flavor: SourceFlavor) {
-  return flavor === "python" || flavor === "workbench" ? python() : [];
+function languageFor(filename: string) {
+  const extension = filename.slice(filename.lastIndexOf(".")).toLowerCase();
+  return extension === ".py" || extension === ".wbjn" ? python() : [];
 }
 
 const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
   function SourceEditor(
     {
       value,
-      flavor,
+      filename,
       highlightRanges,
       theme,
       ariaLabel = "源文本",
@@ -226,7 +227,7 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
               "aria-label": ariaLabel,
               spellcheck: "false",
             }),
-            languageCompartment.current.of(languageFor(flavor)),
+            languageCompartment.current.of(languageFor(filename)),
             themeCompartment.current.of(editorThemeExtensions(theme)),
             highlightField,
             placeholder("在这里粘贴任意文本，然后选中想定位的内容…"),
@@ -345,9 +346,9 @@ const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
       const view = viewRef.current;
       if (!view) return;
       view.dispatch({
-        effects: languageCompartment.current.reconfigure(languageFor(flavor)),
+        effects: languageCompartment.current.reconfigure(languageFor(filename)),
       });
-    }, [flavor]);
+    }, [filename]);
 
     useEffect(() => {
       const view = viewRef.current;

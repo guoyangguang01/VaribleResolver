@@ -47,9 +47,7 @@ import {
   type OutputExtraction,
 } from "../lib/launcher";
 import {
-  lineNumberAt,
-  normalizeSourceText,
-  sourceFlavorFromFilename,
+  restoreSourceLineEndings,
   type SourceRange,
 } from "../lib/variables";
 import {
@@ -404,18 +402,6 @@ export function useProgramWorkspace() {
     ) ??
     visibleBindings[0] ??
     null;
-  const selectedParameterFile = selectedParameter
-    ? isFileBinding(selectedParameter)
-      ? filesByPath.get(selectedParameter.filePath)
-      : null
-    : null;
-  const selectedParameterFileLabel = !selectedParameter
-    ? ""
-    : isFreeBinding(selectedParameter)
-      ? FREE_PARAMETER_SCOPE
-      : (projectRelativeFilePaths[selectedParameter.filePath] ??
-        selectedParameterFile?.name ??
-        "未封装文件");
   const selectedParameterOutput = selectedParameter
     ? outputsByParameterKey.get(parameterKey(selectedParameter))
     : null;
@@ -697,7 +683,7 @@ export function useProgramWorkspace() {
         content: replacement.content,
         sourcePath: replacement.sourcePath,
         sourceContent: replacement.sourceContent,
-        flavor: sourceFlavorFromFilename(file.name),
+        lineEnding: replacement.lineEnding,
         size: replacement.size,
       };
     });
@@ -749,7 +735,7 @@ export function useProgramWorkspace() {
               webkitRelativePath?: string;
             }
           ).webkitRelativePath || file.name,
-          normalizeSourceText(raw),
+          raw,
         ),
       );
     }
@@ -767,7 +753,7 @@ export function useProgramWorkspace() {
       const imported = selected.map((file) =>
         createLaunchFile(
           file.path,
-          normalizeSourceText(file.content),
+          file.content,
           file.path,
         ),
       );
@@ -848,7 +834,7 @@ export function useProgramWorkspace() {
           path: file.path,
           name: file.name,
           content: file.content,
-          flavor: file.flavor,
+          lineEnding: file.lineEnding,
           size: file.size,
         }))
       : parsed.files;
@@ -1028,7 +1014,11 @@ export function useProgramWorkspace() {
           await desktopApi.updateFiles(
             [...originalFileContents].map(([path, content]) => ({
               path,
-              content,
+              content: restoreSourceLineEndings(
+                content,
+                files.find((file) => file.sourcePath === path)?.lineEnding ??
+                  "\n",
+              ),
             })),
           );
           savedFiles = files.map((file) => {
@@ -1155,7 +1145,6 @@ export function useProgramWorkspace() {
               ...file,
               path: nextPath,
               name: nextName,
-              flavor: sourceFlavorFromFilename(nextPath),
             }
           : file,
       ),
@@ -1790,6 +1779,6 @@ export function useProgramWorkspace() {
 
 
   return {
-    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterFileLabel, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
+    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
   };
 }

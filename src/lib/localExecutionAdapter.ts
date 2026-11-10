@@ -7,7 +7,6 @@ import type {
   ProjectProgramRequest,
   ProjectProgramResult,
 } from "./projectExecution.ts";
-import { normalizeSourceText } from "./variables.ts";
 
 export interface LocalExecutionAdapterOptions {
   writableRoot?: string;
@@ -44,7 +43,7 @@ export function createLocalExecutionAdapter(
         }
         return {
           path: filePath,
-          content: normalizeSourceText(buffer.toString("utf8")),
+          content: buffer.toString("utf8"),
         };
       } catch (error) {
         if (isMissingFileError(error)) return null;

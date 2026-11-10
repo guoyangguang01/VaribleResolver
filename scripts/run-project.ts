@@ -10,7 +10,6 @@ import {
 } from "../src/lib/projectExecution.ts";
 import { createLocalExecutionAdapter } from "../src/lib/localExecutionAdapter.ts";
 import { parseRunRequest } from "../src/lib/runRequest.ts";
-import { normalizeSourceText } from "../src/lib/variables.ts";
 import { assertInsideRoot } from "../electron/projectPaths.js";
 import { createProjectRunWorkspace } from "../electron/runWorkspace.js";
 
@@ -241,7 +240,7 @@ async function loadProject(
     }
     files.push({
       relativePath: entry.relativePath,
-      content: normalizeSourceText(content),
+      content,
     });
   }
 

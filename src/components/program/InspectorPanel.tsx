@@ -42,7 +42,6 @@ interface InspectorPanelProps {
   locatorModeValues: LocatorModeValues;
   program: string;
   selectedParameter: LaunchBinding | null;
-  selectedParameterFileLabel: string;
   selectedParameterOutput: OutputExtraction | null;
   selectedParameterValueError: string | null;
   tab: InspectorTab;
@@ -108,7 +107,6 @@ function moveTabFocus(event: ReactKeyboardEvent<HTMLButtonElement>) {
 function ParameterProperties({
   inputReferenceResolution,
   selectedParameter,
-  selectedParameterFileLabel,
   selectedParameterOutput,
   selectedParameterValueError,
   onBeginEditLocator,
@@ -119,7 +117,6 @@ function ParameterProperties({
   InspectorPanelProps,
   | "inputReferenceResolution"
   | "selectedParameter"
-  | "selectedParameterFileLabel"
   | "selectedParameterOutput"
   | "selectedParameterValueError"
   | "onBeginEditLocator"
@@ -324,15 +321,6 @@ function ParameterProperties({
               <span>{selectedParameterOutput?.value ?? "等待提取"}</span>
             </div>
           )}
-        </label>
-        <label className="runner-property-field is-wide">
-          <span>文件</span>
-          <input
-            aria-label="参数文件"
-            readOnly
-            title={selectedParameterFileLabel}
-            value={selectedParameterFileLabel}
-          />
         </label>
         <div className="runner-property-field is-wide">
           <span>定位</span>

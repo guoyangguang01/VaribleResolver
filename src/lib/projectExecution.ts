@@ -16,7 +16,7 @@ import {
   type LaunchFile,
   type OutputExtraction,
 } from "./launcher.ts";
-import { normalizeSourceText } from "./variables.ts";
+import { restoreSourceLineEndings } from "./variables.ts";
 
 export interface ProjectExecutionSnapshot {
   program: string;
@@ -343,7 +343,10 @@ function prepareInputWrites(
       continue;
     }
     if (result.source !== file.content) {
-      writes.push({ path: file.path, content: result.source });
+      writes.push({
+        path: file.path,
+        content: restoreSourceLineEndings(result.source, file.lineEnding),
+      });
     }
     const updatedById = new Map(
       result.bindings.map((binding) => [parameterKey(binding), binding]),
@@ -377,7 +380,7 @@ async function readAfterFiles(
         files.push(
           createLaunchFile(
             file.path,
-            normalizeSourceText(file.content),
+            file.content,
           ),
         );
       }
@@ -422,7 +425,7 @@ export async function executeProjectWithOverrides(
       sourceFiles.push(
         createLaunchFile(
           diskFile.path,
-          normalizeSourceText(diskFile.content),
+          diskFile.content,
         ),
       );
       continue;

@@ -18,6 +18,13 @@ test("local executor refuses file access outside the generated project", async (
     });
     const outsideFile = path.join(outside, "input.txt");
     await fs.writeFile(outsideFile, "outside", "utf8");
+    const insideFile = path.join(root, "input.txt");
+    await fs.writeFile(insideFile, "first\r\nsecond\r", "utf8");
+
+    assert.deepEqual(await adapter.readFile(insideFile), {
+      path: insideFile,
+      content: "first\r\nsecond\r",
+    });
 
     await assert.rejects(
       () => adapter.readFile(outsideFile),

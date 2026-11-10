@@ -149,6 +149,41 @@ test("applies an input override by file and parameter name", async () => {
   assert.equal(adapter.files.get(OUTPUT_PATH), "result = 45\n");
 });
 
+test("preserves each input file's line ending when writing overrides", async () => {
+  for (const lineEnding of ["\n", "\r\n", "\r"] as const) {
+    const adapter = new MemoryAdapter([
+      [INPUT_PATH, `pressure = 10${lineEnding}`],
+      [OUTPUT_PATH, `result = 20${lineEnding}`],
+    ]);
+    adapter.onRun = (request) => {
+      const value = request.args.at(-1) === "25" ? "45" : "20";
+      adapter.files.set(OUTPUT_PATH, `result = ${value}${lineEnding}`);
+    };
+
+    const result = await executeProjectWithOverrides({
+      snapshot: buildSnapshot(),
+      overrides: [
+        {
+          fileName: "input.txt",
+          parameterName: "压力",
+          value: "25",
+        },
+      ],
+      adapter,
+    });
+
+    assert.equal(
+      adapter.files.get(INPUT_PATH),
+      `pressure = 25${lineEnding}`,
+    );
+    assert.equal(
+      adapter.files.get(OUTPUT_PATH),
+      `result = 45${lineEnding}`,
+    );
+    assert.equal(result.outputs[0].value, "45");
+  }
+});
+
 test("matches an input override by the file stem", async () => {
   const snapshot = buildSnapshot();
   const adapter = new MemoryAdapter([

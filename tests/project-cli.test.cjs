@@ -48,17 +48,17 @@ test("project CLI runs in an isolated workspace and extracts a new output", asyn
     await fs.mkdir(path.join(project, "files"), { recursive: true });
     await fs.writeFile(
       path.join(project, "files", "input.ccl"),
-      "temperature = 10\n",
+      "temperature = 10\r\n",
       "utf8",
     );
     await fs.writeFile(
       path.join(project, "files", "alias.ccl"),
-      "temperature = 10\n",
+      "temperature = 10\r",
       "utf8",
     );
     await fs.writeFile(
       path.join(project, "files", "report.txt"),
-      "maximum = 0\n",
+      "maximum = 0\r\n",
       "utf8",
     );
     await fs.writeFile(
@@ -73,7 +73,7 @@ test("project CLI runs in an isolated workspace and extracts a new output", asyn
         'const text = fs.readFileSync(input, "utf8");',
         "const match = text.match(/temperature\\s*=\\s*([0-9.]+)/);",
         "const value = Number(match[1]) + 5;",
-        'fs.writeFileSync(output, `maximum = ${value}\\nmaterial = ${material}\\n`, "utf8");',
+        'fs.writeFileSync(output, `maximum = ${value}\\r\\nmaterial = ${material}\\r\\n`, "utf8");',
       ].join("\n"),
       "utf8",
     );
@@ -218,28 +218,42 @@ test("project CLI runs in an isolated workspace and extracts a new output", asyn
         path.join(project, "files", "input.ccl"),
         "utf8",
       ),
-      "temperature = 10\n",
+      "temperature = 10\r\n",
+    );
+    assert.equal(
+      await fs.readFile(
+        path.join(project, "files", "alias.ccl"),
+        "utf8",
+      ),
+      "temperature = 10\r",
     );
     assert.equal(
       await fs.readFile(
         path.join(project, "files", "report.txt"),
         "utf8",
       ),
-      "maximum = 0\n",
+      "maximum = 0\r\n",
     );
     assert.equal(
       await fs.readFile(
         path.join(report.project.runPath, "files", "report.txt"),
         "utf8",
       ),
-      "maximum = 25\nmaterial = aluminum\n",
+      "maximum = 25\r\nmaterial = aluminum\r\n",
     );
     assert.equal(
       await fs.readFile(
         path.join(report.project.runPath, "files", "alias.ccl"),
         "utf8",
       ),
-      "temperature = 20\n",
+      "temperature = 20\r",
+    );
+    assert.equal(
+      await fs.readFile(
+        path.join(report.project.runPath, "files", "input.ccl"),
+        "utf8",
+      ),
+      "temperature = 20\r\n",
     );
   } finally {
     await fs.rm(root, { recursive: true, force: true });

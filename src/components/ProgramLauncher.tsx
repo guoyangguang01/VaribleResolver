@@ -72,7 +72,6 @@ export default function ProgramLauncher() {
     visibleBindings,
     parameterFileGroups,
     selectedParameter,
-    selectedParameterFileLabel,
     selectedParameterOutput,
     inputReferenceResolution,
     selectedParameterValueError,
@@ -277,7 +276,6 @@ export default function ProgramLauncher() {
             onRemoveBinding={removeBinding}
             program={program}
             selectedParameter={selectedParameter}
-            selectedParameterFileLabel={selectedParameterFileLabel}
             selectedParameterOutput={selectedParameterOutput ?? null}
             selectedParameterValueError={selectedParameterValueError}
             setArgumentText={setArgumentText}

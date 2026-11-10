@@ -1,6 +1,7 @@
 import {
-  sourceFlavorFromFilename,
-  type SourceFlavor,
+  detectSourceLineEnding,
+  normalizeSourceText,
+  type SourceLineEnding,
   type SourceRange,
 } from "./variables.ts";
 import { LauncherError } from "./locators/errors.ts";
@@ -54,7 +55,7 @@ export interface LaunchFile {
   sourceContent?: string;
   name: string;
   content: string;
-  flavor: SourceFlavor;
+  lineEnding: SourceLineEnding;
   size: number;
 }
 
@@ -357,17 +358,19 @@ export function createLaunchFile(
     normalizedPath.lastIndexOf("/"),
     normalizedPath.lastIndexOf("\\"),
   );
+  const lineEnding = detectSourceLineEnding(content);
+  const normalizedContent = normalizeSourceText(content);
   return {
     path: normalizedPath,
     ...(normalizedSourcePath
       ? {
           sourcePath: normalizedSourcePath,
-          sourceContent: content,
+          sourceContent: normalizedContent,
         }
       : {}),
     name: normalizedPath.slice(slash + 1) || normalizedPath,
-    content,
-    flavor: sourceFlavorFromFilename(normalizedPath),
+    content: normalizedContent,
+    lineEnding,
     size: new Blob([content]).size,
   };
 }

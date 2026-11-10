@@ -9,6 +9,7 @@ import {
   type LaunchLocator,
 } from "./launcher.ts";
 import { isLocatorKind } from "./locators/registry.ts";
+import { restoreSourceLineEndings } from "./variables.ts";
 
 export const PROJECT_SCHEMA = "program-studio-folder-project";
 export const PROJECT_VERSION = 4;
@@ -539,7 +540,7 @@ export function serializeProjectFolder(
     outputs: { outputs },
     files: snapshot.files.map((file, index) => ({
       relativePath: files[index].relativePath,
-      content: file.content,
+      content: restoreSourceLineEndings(file.content, file.lineEnding),
     })),
   };
 }

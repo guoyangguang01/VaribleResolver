@@ -171,7 +171,7 @@ test("uses the full path as file identity and derives the display name", () => {
 
   assert.equal(sourceFile.path, "C:\\Cases\\fa1\\GSP\\CFX1.ccl");
   assert.equal(sourceFile.name, "CFX1.ccl");
-  assert.equal(sourceFile.flavor, "ccl");
+  assert.equal(sourceFile.lineEnding, "\n");
 });
 
 test("writes and extracts values through fa1-style row and column positions", () => {

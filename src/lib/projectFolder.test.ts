@@ -105,6 +105,40 @@ test("parses a folder project with its generated project path", () => {
   );
 });
 
+test("normalizes project file contents in memory without changing the payload", () => {
+  const project = sampleProject();
+  project.files[0].content = "Total Time = 0.04 [s]\r\n";
+
+  const parsed = parseProjectFolder(project);
+
+  assert.equal(parsed.files[0].content, "Total Time = 0.04 [s]\n");
+  assert.equal(parsed.files[0].lineEnding, "\r\n");
+  assert.equal(project.files[0].content, "Total Time = 0.04 [s]\r\n");
+});
+
+test("preserves each file line ending across a project round trip", () => {
+  for (const lineEnding of ["\n", "\r\n", "\r"] as const) {
+    const source = `first = 1${lineEnding}second = 2${lineEnding}`;
+    const sourceFile = createLaunchFile(
+      `C:\\Cases\\line-endings-${lineEnding.length}.txt`,
+      source,
+    );
+    const project = serializeProjectFolder({
+      name: "换行风格工程",
+      program: "C:\\Tools\\runner.exe",
+      arguments: "",
+      workingDirectory: "C:\\Cases",
+      files: [sourceFile],
+      bindings: [],
+    });
+
+    assert.equal(project.files[0].content, source);
+    const parsed = parseProjectFolder(project);
+    assert.equal(parsed.files[0].content, "first = 1\nsecond = 2\n");
+    assert.equal(parsed.files[0].lineEnding, lineEnding);
+  }
+});
+
 test("separates reference outputs from runtime output paths", () => {
   const inputFile = createLaunchFile(
     "C:\\Cases\\output-contract\\input.ccl",

@@ -457,6 +457,7 @@ test("edits an existing parameter locator and applies the new range", async ({
     "固定长度 · R2:C0",
   );
   await runner.getByRole("tab", { name: "参数属性" }).click();
+  await expect(runner.getByLabel("参数文件")).toHaveCount(0);
   await expect(runner.getByLabel("参数定位信息")).toContainText(
     "起始行",
   );
