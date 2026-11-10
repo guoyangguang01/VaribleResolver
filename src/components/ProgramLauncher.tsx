@@ -252,6 +252,7 @@ export default function ProgramLauncher() {
 
           <InspectorPanel
             argumentText={argumentText}
+            bindings={bindings}
             editingBinding={
               editingBinding && isFileBinding(editingBinding)
                 ? editingBinding

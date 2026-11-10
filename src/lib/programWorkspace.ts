@@ -72,16 +72,8 @@ export function remapParameterReference(
   const normalized = reference.trim();
   const transitions = [
     [
-      `@${parameterFileName(oldFilePath)}[In].${oldName}`,
-      `@${parameterFileName(newFilePath)}[In].${newName}`,
-    ],
-    [
       `@${fileStem(oldFilePath)}[In].${oldName}`,
       `@${fileStem(newFilePath)}[In].${newName}`,
-    ],
-    [
-      `@${parameterFileName(oldFilePath)}[Out].${oldName}`,
-      `@${parameterFileName(newFilePath)}[Out].${newName}`,
     ],
     [
       `@${fileStem(oldFilePath)}[Out].${oldName}`,

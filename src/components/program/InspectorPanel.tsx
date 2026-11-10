@@ -8,6 +8,7 @@ import {
   LAUNCH_PARAMETER_TYPES,
   isFreeBinding,
   parameterKey,
+  referenceOptionsForBinding,
   type FileLaunchBinding,
   type InputReferenceResolution,
   type LaunchBinding,
@@ -34,6 +35,7 @@ const PARAMETER_TYPE_LABELS: Record<LaunchParameterType, string> = {
 
 interface InspectorPanelProps {
   argumentText: string;
+  bindings: LaunchBinding[];
   editingBinding: FileLaunchBinding | null;
   inputReferenceResolution: InputReferenceResolution;
   isCollapsed: boolean;
@@ -105,6 +107,7 @@ function moveTabFocus(event: ReactKeyboardEvent<HTMLButtonElement>) {
 }
 
 function ParameterProperties({
+  bindings,
   inputReferenceResolution,
   selectedParameter,
   selectedParameterOutput,
@@ -115,6 +118,7 @@ function ParameterProperties({
   updateBinding,
 }: Pick<
   InspectorPanelProps,
+  | "bindings"
   | "inputReferenceResolution"
   | "selectedParameter"
   | "selectedParameterOutput"
@@ -132,6 +136,11 @@ function ParameterProperties({
       </div>
     );
   }
+
+  const referenceOptions = referenceOptionsForBinding(
+    bindings,
+    selectedParameter,
+  );
 
   return (
     <>
@@ -182,17 +191,24 @@ function ParameterProperties({
             <span>引用主参数</span>
             <input
               aria-label="引用主参数"
+              list="input-reference-options"
               onChange={(event) =>
                 updateBinding(parameterKey(selectedParameter), {
                   inputReference: event.target.value.trim() || undefined,
                 })
               }
-              placeholder="@文件名[In].参数名"
+              placeholder="@文件主名[In].参数名"
               value={selectedParameter.inputReference ?? ""}
             />
-            <small className="runner-property-help">
-              引用参数不直接赋值，运行时跟随主参数值。
-            </small>
+            <datalist id="input-reference-options">
+              {referenceOptions.inputs.map((option) => (
+                <option
+                  key={option.value}
+                  label={option.label}
+                  value={option.value}
+                />
+              ))}
+            </datalist>
           </label>
         )}
         {isFreeBinding(selectedParameter) &&
@@ -201,17 +217,24 @@ function ParameterProperties({
               <span>引用绑定输出</span>
               <input
                 aria-label="引用绑定输出"
+                list="output-reference-options"
                 onChange={(event) =>
                   updateBinding(parameterKey(selectedParameter), {
                     outputReference: event.target.value.trim() || undefined,
                   })
                 }
-                placeholder="@文件名[Out].参数名"
+                placeholder="@文件主名[Out].参数名"
                 value={selectedParameter.outputReference ?? ""}
               />
-              <small className="runner-property-help">
-                引用输出优先；引用失败时可使用下方手动值。
-              </small>
+              <datalist id="output-reference-options">
+                {referenceOptions.outputs.map((option) => (
+                  <option
+                    key={option.value}
+                    label={option.label}
+                    value={option.value}
+                  />
+                ))}
+              </datalist>
             </label>
           )}
         <label className="runner-property-field">
@@ -513,7 +536,6 @@ export function InspectorPanel(props: InspectorPanelProps) {
               rows={3}
               value={props.argumentText}
             />
-            <small>参数中的 @文件名[In].参数名 会替换为绑定值。</small>
           </label>
           <label className="runner-field">
             <span>工作目录</span>
@@ -524,7 +546,6 @@ export function InspectorPanel(props: InspectorPanelProps) {
               placeholder="files"
               value={props.workingDirectory}
             />
-            <small>相对路径以工程目录或运行工作区为基准。</small>
           </label>
         </div>
       )}

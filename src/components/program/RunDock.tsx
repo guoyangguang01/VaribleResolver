@@ -75,9 +75,6 @@ export function RunDock({
             <span>命令预览</span>
             <strong>启动命令</strong>
           </div>
-          <small>
-            桌面客户端会直接启动程序并刷新输出文件。
-          </small>
         </div>
         <pre aria-live="polite">
           {commandPreview ||
@@ -118,11 +115,6 @@ export function RunDock({
           <div className="runner-run-empty">
             <span className={isRunning ? "is-running" : ""} />
             <strong>{isRunning ? "程序运行中" : "等待运行"}</strong>
-            <p>
-              {isRunning
-                ? "程序完成后会自动刷新绑定文件并提取输出参数。"
-                : "配置程序路径和参数后，使用工具栏中的“运行程序”。"}
-            </p>
           </div>
         )}
       </div>

@@ -13,6 +13,7 @@ import {
   interpolateArguments,
   parseCommandArguments,
   parameterKey,
+  referenceOptionsForBinding,
   resolveInputReferences,
   resolveLaunchBinding,
   tokenizeSpecialCharacters,
@@ -596,7 +597,7 @@ test("rejects the legacy brace syntax and unresolved @ references", () => {
   };
   assert.throws(
     () => interpolateArguments(["{{mode}}"], [binding]),
-    /只支持 @文件名\[In\]\.参数名/,
+    /只支持 @文件主名\[In\]\.参数名/,
   );
   assert.throws(
     () => interpolateArguments(["@missing[In].mode"], [binding]),
@@ -628,7 +629,7 @@ test("resolves input references and interpolates @ parameter aliases", () => {
   );
   assert.deepEqual(
     parseCommandArguments(
-      "--primary @primary[In].入口温度 --alias=@alias.txt[In].副本温度",
+      "--primary @primary[In].入口温度 --alias=@alias[In].副本温度",
     ).map((argument) =>
       interpolateArguments([argument], [primary, alias])[0],
     ),
@@ -670,6 +671,118 @@ test("reports input reference cycles and type mismatches", () => {
     boolAlias,
   ]);
   assert.match([...mismatch.errors.values()][0] ?? "", /类型不一致/);
+});
+
+test("offers typed input reference options and excludes cycles", () => {
+  const primaryFile = file("primary.txt", "temperature = 550\n");
+  const aliasFile = file("alias.txt", "temperature = 550\n");
+  const textFile = file("notes.txt", "material = steel\n");
+  const primary = {
+    ...selectedBinding(primaryFile, "550", "input"),
+    name: "入口温度",
+  };
+  const alias = {
+    ...selectedBinding(aliasFile, "550", "input"),
+    name: "副本温度",
+  };
+  const text = {
+    ...selectedBinding(textFile, "steel", "input"),
+    name: "材料",
+    parameterType: "text" as const,
+  };
+  const free: LaunchBinding = {
+    scope: "free",
+    name: "安全系数",
+    direction: "input",
+    value: "1.5",
+    parameterType: "number",
+    defaultValue: "1.5",
+    unit: "",
+    description: "",
+  };
+
+  assert.deepEqual(
+    referenceOptionsForBinding(
+      [primary, alias, text, free],
+      alias,
+    ).inputs.map((option) => option.value),
+    ["@primary[In].入口温度", "@自由参数[In].安全系数"],
+  );
+
+  const circularPrimary = {
+    ...primary,
+    inputReference: "@alias[In].副本温度",
+  };
+  const circularAlias = {
+    ...alias,
+    inputReference: "@primary[In].入口温度",
+  };
+  assert.deepEqual(
+    referenceOptionsForBinding(
+      [circularPrimary, circularAlias],
+      circularPrimary,
+    ).inputs,
+    [],
+  );
+
+  const suffixedReference = {
+    ...alias,
+    inputReference: "@primary.txt[In].入口温度",
+  };
+  assert.match(
+    [...resolveInputReferences([primary, suffixedReference]).errors.values()][0] ??
+      "",
+    /不存在的输入参数/,
+  );
+});
+
+test("offers unique output references to free outputs", () => {
+  const resultFile = file("result.txt", "maximum = 12.5\n");
+  const bound = {
+    ...selectedBinding(resultFile, "12.5", "output"),
+    name: "最大值",
+  };
+  const freeOutput: LaunchBinding = {
+    scope: "free",
+    name: "引用结果",
+    direction: "output",
+    value: "",
+    parameterType: "number",
+    defaultValue: "",
+    unit: "",
+    description: "",
+  };
+  const duplicateFile = file("nested/result.txt", "maximum = 8\n");
+  const duplicate = {
+    ...selectedBinding(duplicateFile, "8", "output"),
+    name: "最大值",
+  };
+
+  assert.deepEqual(
+    referenceOptionsForBinding([bound, freeOutput], freeOutput).outputs,
+    [
+      {
+        value: "@result[Out].最大值",
+        label: "最大值 · number",
+      },
+    ],
+  );
+  assert.deepEqual(
+    referenceOptionsForBinding(
+      [bound, duplicate, freeOutput],
+      freeOutput,
+    ).outputs,
+    [],
+  );
+
+  const suffixedOutput = {
+    ...freeOutput,
+    outputReference: "@result.txt[Out].最大值",
+  };
+  assert.match(
+    extractOutputBindings([bound], [suffixedOutput])[0]?.error ?? "",
+    /未找到输出引用/,
+  );
 });
 
 test("interpolates a free parameter without a file binding", () => {

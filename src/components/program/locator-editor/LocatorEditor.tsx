@@ -6,7 +6,6 @@ import { LOCATOR_FIELD_EDITORS } from "./LocatorFields";
 import type { LocatorEditorProps } from "./types";
 
 export function LocatorEditor({
-  editingBinding,
   locatorMode,
   locatorModeValues,
   onApplyLocator,
@@ -22,7 +21,6 @@ export function LocatorEditor({
           <span>定位规则</span>
           <strong>识别模式</strong>
         </div>
-        <small>正在修改：{editingBinding?.name}</small>
       </div>
       <label className="runner-field">
         <select

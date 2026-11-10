@@ -778,7 +778,7 @@ export function parseProjectFolder(
         : undefined;
     if (inputReference && !/^@.+\[In\]\..+$/i.test(inputReference)) {
       throw new ProjectFormatError(
-        `第 ${index + 1} 个输入参数引用格式应为 @文件名[In].参数名。`,
+        `第 ${index + 1} 个输入参数引用格式应为 @文件主名[In].参数名，文件主名不含扩展名。`,
       );
     }
     if (
@@ -800,7 +800,7 @@ export function parseProjectFolder(
       !/^@.+\[Out\]\..+$/i.test(outputReference)
     ) {
       throw new ProjectFormatError(
-        `第 ${index + 1} 个输出参数引用格式应为 @文件名[Out].参数名。`,
+        `第 ${index + 1} 个输出参数引用格式应为 @文件主名[Out].参数名，文件主名不含扩展名。`,
       );
     }
     if (

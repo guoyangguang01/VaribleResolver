@@ -55,11 +55,11 @@ export function SourceWorkspace({
           <span>当前文件</span>
           <strong>{activeFile?.path ?? "请选择文件"}</strong>
         </div>
-        <span className="runner-selection-count">
-          {selectedText.length > 0
-            ? `${selectedText.length} 字符`
-            : "等待选择"}
-        </span>
+        {selectedText.length > 0 && (
+          <span className="runner-selection-count">
+            {selectedText.length} 字符
+          </span>
+        )}
       </div>
       {activeFile && (
         <label className="runner-file-path-field">
@@ -143,9 +143,6 @@ export function SourceWorkspace({
               : `已定位 · ${locatedBinding?.name ?? ""}`}
           </small>
         )}
-        <span className="runner-binding-context-hint">
-          选中内容后右键添加参数
-        </span>
       </div>
     </div>
   );

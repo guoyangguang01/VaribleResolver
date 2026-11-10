@@ -129,8 +129,7 @@ function referencedInputBindings(
       binding.name === parameterName &&
       (binding.scope === "free"
         ? FREE_PARAMETER_SCOPE.toLowerCase() === fileName
-        : inputFilePath(binding.filePath).toLowerCase() === fileName ||
-          inputFileStem(binding.filePath).toLowerCase() === fileName),
+        : inputFileStem(binding.filePath).toLowerCase() === fileName),
   );
 }
 
@@ -147,8 +146,7 @@ function referencedOutputBindings(
       binding.direction === "output" &&
       isFileBinding(binding) &&
       binding.name === parameterName &&
-      (inputFilePath(binding.filePath).toLowerCase() === fileName ||
-        inputFileStem(binding.filePath).toLowerCase() === fileName),
+      inputFileStem(binding.filePath).toLowerCase() === fileName,
   );
 }
 
@@ -189,7 +187,7 @@ export function resolveInputReferences(
       if (!reference || reference.direction !== "input") {
         errors.set(
           parameterKey(binding),
-          `参数“${current.name}”的引用格式无效，应为 @文件名[In].参数名。`,
+          `参数“${current.name}”的引用格式无效，应为 @文件主名[In].参数名。`,
         );
         break;
       }
@@ -280,6 +278,85 @@ export function parameterKey(binding: LaunchBinding): string {
   return binding.scope === "free"
     ? `${FREE_PARAMETER_SCOPE}.${binding.name}`
     : `${parameterFileName(binding.filePath)}.${binding.name}`;
+}
+
+export interface ParameterReferenceOption {
+  value: string;
+  label: string;
+}
+
+export interface ParameterReferenceOptions {
+  inputs: ParameterReferenceOption[];
+  outputs: ParameterReferenceOption[];
+}
+
+function referenceFileLabel(binding: LaunchBinding): string {
+  return isFreeBinding(binding)
+    ? FREE_PARAMETER_SCOPE
+    : inputFileStem(binding.filePath);
+}
+
+function referenceOption(
+  binding: LaunchBinding,
+  direction: "input" | "output",
+): ParameterReferenceOption {
+  return {
+    value: `@${referenceFileLabel(binding)}[${direction === "input" ? "In" : "Out"}].${binding.name}`,
+    label: `${binding.name} · ${binding.parameterType}`,
+  };
+}
+
+function uniqueReferenceOptions(
+  bindings: LaunchBinding[],
+  direction: "input" | "output",
+): ParameterReferenceOption[] {
+  const options = bindings.map((binding) =>
+    referenceOption(binding, direction),
+  );
+  const counts = new Map<string, number>();
+  for (const option of options) {
+    counts.set(option.value, (counts.get(option.value) ?? 0) + 1);
+  }
+  return options
+    .filter((option) => counts.get(option.value) === 1)
+    .sort((left, right) =>
+      left.value < right.value ? -1 : left.value > right.value ? 1 : 0,
+    );
+}
+
+export function referenceOptionsForBinding(
+  bindings: LaunchBinding[],
+  current: LaunchBinding,
+): ParameterReferenceOptions {
+  const currentKey = parameterKey(current);
+  const inputCandidates = bindings.filter(
+    (binding) =>
+      binding.direction === "input" &&
+      binding.parameterType === current.parameterType &&
+      parameterKey(binding) !== currentKey,
+  );
+  const inputs = uniqueReferenceOptions(inputCandidates, "input").filter(
+    (option) => {
+      const nextBindings = bindings.map((binding) =>
+        parameterKey(binding) === currentKey
+          ? { ...binding, inputReference: option.value }
+          : binding,
+      );
+      return !resolveInputReferences(nextBindings).errors.has(currentKey);
+    },
+  );
+  const outputs =
+    current.direction === "output" && isFreeBinding(current)
+      ? uniqueReferenceOptions(
+          bindings.filter(
+            (binding) =>
+              binding.direction === "output" &&
+              isFileBinding(binding),
+          ),
+          "output",
+        )
+      : [];
+  return { inputs, outputs };
 }
 
 interface LaunchBindingBase {
@@ -775,7 +852,7 @@ export function interpolateArguments(
 ): string[] {
   if (args.some((argument) => /\{\{[^{}]+\}\}/.test(argument))) {
     throw new LauncherError(
-      "启动参数只支持 @文件名[In].参数名 语法，不支持 {{参数名}}。",
+      "启动参数只支持 @文件主名[In].参数名 语法，文件主名不含扩展名，不支持 {{参数名}}。",
     );
   }
   const resolution = resolveInputReferences(bindings);

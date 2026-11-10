@@ -1064,13 +1064,6 @@ body.is-resizing * {
   white-space: nowrap;
 }
 
-.program-runner .runner-binding-context-hint {
-  flex: 0 0 auto;
-  color: var(--text-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
 .editor-context-menu {
   position: fixed;
   z-index: 120;
@@ -2081,12 +2074,6 @@ body.is-resizing * {
 
 .runner-run-empty strong {
   color: var(--text-secondary);
-  font-size: 11px;
-}
-
-.runner-run-empty p {
-  margin: 0;
-  color: var(--text-muted);
   font-size: 11px;
 }
 
