@@ -100,9 +100,6 @@ export function remapReferenceFile(
   const fileName = match[1];
   const direction = match[2];
   const parameterName = match[3];
-  if (fileName === parameterFileName(oldFilePath)) {
-    return `@${parameterFileName(newFilePath)}[${direction}].${parameterName}`;
-  }
   if (fileName === fileStem(oldFilePath)) {
     return `@${fileStem(newFilePath)}[${direction}].${parameterName}`;
   }

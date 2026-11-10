@@ -150,7 +150,7 @@ test("rejects a token-relative automatic locator after the token count changes",
   assert.match(output.error ?? "", /Token 数量发生变化/);
 });
 
-test("keeps cross-line automatic selections on the legacy fixed range", () => {
+test("keeps cross-line automatic selections on fixed coordinates", () => {
   const sourceFile = file("multi.txt", "first\nsecond");
   const locator = createAutoPositionLocator(sourceFile, {
     start: sourceFile.content.indexOf("first"),

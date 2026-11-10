@@ -14,7 +14,7 @@
     "package:dir": "npm run build && electron-builder --dir",
     "build": "tsc --noEmit && vite build",
     "project:run": "node scripts/run-project.ts",
-    "test": "node --test src/lib/variables.test.ts src/lib/launcher.test.ts src/lib/locators/registry.test.ts src/lib/relocation.test.ts src/lib/projectFolder.test.ts src/lib/projectExecution.test.ts src/lib/runRequest.test.ts src/lib/localExecutionAdapter.test.ts src/lib/theme.test.ts tests/run-workspace.test.mjs tests/project-cli.test.cjs",
+    "test": "node --test src/lib/variables.test.ts src/lib/launcher.test.ts src/lib/locators/registry.test.ts src/lib/relocation.test.ts src/lib/programWorkspace.test.ts src/lib/projectFolder.test.ts src/lib/projectExecution.test.ts src/lib/runRequest.test.ts src/lib/localExecutionAdapter.test.ts src/lib/theme.test.ts tests/run-workspace.test.mjs tests/project-cli.test.cjs",
     "test:ui": "node scripts/run-ui-tests.mjs"
   },
   "dependencies": {
