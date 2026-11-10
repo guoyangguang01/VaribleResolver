@@ -69,7 +69,6 @@ export default function ProgramLauncher() {
     editorContextText,
     outputsByParameterKey,
     editingBinding,
-    visibleAutoTokenRange,
     visibleBindings,
     parameterFileGroups,
     selectedParameter,
@@ -290,7 +289,6 @@ export default function ProgramLauncher() {
             tab={inspectorTab}
             updateBinding={updateBinding}
             updateLocatorValue={updateLocatorValue}
-            visibleAutoTokenRange={visibleAutoTokenRange}
             workingDirectory={workingDirectory}
           />
         </div>

@@ -6,12 +6,11 @@ import {
   type LaunchBinding,
   type LaunchLocator,
 } from "./launcher.ts";
+import type { SourceTextChange as LocatorSourceTextChange } from "./locators/model.ts";
+import { locatorStrategyForKind } from "./locators/registry.ts";
+import { createRelocationContext } from "./locators/shared.ts";
 
-export interface SourceTextChange {
-  from: number;
-  to: number;
-  insert: string;
-}
+export type SourceTextChange = LocatorSourceTextChange;
 
 export interface SourceEditorChange {
   value: string;
@@ -21,53 +20,6 @@ export interface SourceEditorChange {
 export interface RelocationResult {
   bindings: LaunchBinding[];
   invalidatedParameterKeys: string[];
-}
-
-function countLineBreaks(value: string): number {
-  let count = 0;
-  for (const character of value) {
-    if (character === "\n") count += 1;
-  }
-  return count;
-}
-
-function lineStarts(content: string): number[] {
-  const starts = [0];
-  for (let index = 0; index < content.length; index += 1) {
-    if (content[index] === "\n") starts.push(index + 1);
-  }
-  return starts;
-}
-
-function rowDeltaBefore(
-  previousContent: string,
-  changes: SourceTextChange[],
-  anchor: number,
-): number {
-  let delta = 0;
-  for (const change of changes) {
-    if (change.to > anchor) continue;
-    const removed = previousContent.slice(change.from, change.to);
-    delta +=
-      countLineBreaks(change.insert) - countLineBreaks(removed);
-  }
-  return delta;
-}
-
-function mapRow(
-  rowIndex: number,
-  starts: number[],
-  previousContent: string,
-  changes: SourceTextChange[],
-): number | null {
-  const anchor = starts[rowIndex - 1];
-  if (anchor === undefined) return null;
-  const mapped = rowIndex + rowDeltaBefore(
-    previousContent,
-    changes,
-    anchor,
-  );
-  return mapped >= 1 ? mapped : null;
 }
 
 function mapPositionThroughChanges(
@@ -87,66 +39,6 @@ function mapPositionThroughChanges(
     return newEnd;
   }
   return position + shift;
-}
-
-function mapLocatorRows(
-  locator: LaunchLocator,
-  previousContent: string,
-  changes: SourceTextChange[],
-): LaunchLocator | null {
-  const starts = lineStarts(previousContent);
-  const map = (rowIndex: number) =>
-    mapRow(rowIndex, starts, previousContent, changes);
-
-  switch (locator.kind) {
-    case "autoPosition": {
-      const startRowIndex = map(locator.startRowIndex);
-      const endRowIndex = map(locator.endRowIndex);
-      return startRowIndex === null || endRowIndex === null
-        ? null
-        : {
-            ...locator,
-            startRowIndex,
-            endRowIndex,
-          };
-    }
-    case "rowColumn": {
-      const startRowIndex = map(locator.startRowIndex);
-      const endRowIndex = map(locator.endRowIndex);
-      return startRowIndex === null || endRowIndex === null
-        ? null
-        : {
-            ...locator,
-            startRowIndex,
-            endRowIndex,
-          };
-    }
-    case "startColumn": {
-      const rowIndex = map(locator.rowIndex);
-      return rowIndex === null ? null : { ...locator, rowIndex };
-    }
-    case "wholeLine": {
-      const rowIndex = map(locator.rowIndex);
-      return rowIndex === null ? null : { ...locator, rowIndex };
-    }
-    case "multiLine": {
-      const startRowIndex = map(locator.startRowIndex);
-      const endRowIndex = map(locator.endRowIndex);
-      return startRowIndex === null || endRowIndex === null
-        ? null
-        : {
-            ...locator,
-            startRowIndex,
-            endRowIndex,
-          };
-    }
-    case "delimited": {
-      const rowIndex = map(locator.rowIndex);
-      return rowIndex === null ? null : { ...locator, rowIndex };
-    }
-    default:
-      return locator;
-  }
 }
 
 function changeTouchesRange(
@@ -194,6 +86,15 @@ export function relocateBindingsAfterEdit(
   bindings: LaunchBinding[],
 ): RelocationResult {
   const invalidatedParameterKeys: string[] = [];
+  const relocationContext = createRelocationContext(
+    previousContent,
+    changes,
+  );
+  const mapLocatorRows = (locator: LaunchLocator): LaunchLocator | null =>
+    locatorStrategyForKind(locator.kind).relocate(
+      relocationContext,
+      locator,
+    );
   const relocated = bindings.map((binding) => {
     if (!isFileBinding(binding) || binding.filePath !== filePath) {
       return binding;
@@ -210,11 +111,7 @@ export function relocateBindingsAfterEdit(
             change.to >= anchor &&
             change.insert.length > 0,
         );
-      const locator = mapLocatorRows(
-        binding.locator,
-        previousContent,
-        changes,
-      );
+      const locator = mapLocatorRows(binding.locator);
       if (!canRestore || !locator) {
         return {
           ...binding,
@@ -250,11 +147,7 @@ export function relocateBindingsAfterEdit(
         binding.locator,
       );
     } catch {
-      const locator = mapLocatorRows(
-        binding.locator,
-        previousContent,
-        changes,
-      );
+      const locator = mapLocatorRows(binding.locator);
       if (locator) {
         try {
           resolveLaunchBinding(nextContent, locator);
@@ -270,11 +163,7 @@ export function relocateBindingsAfterEdit(
       previousRange.start,
       changes,
     );
-    const locator = mapLocatorRows(
-      binding.locator,
-      previousContent,
-      changes,
-    );
+    const locator = mapLocatorRows(binding.locator);
     if (!locator) {
       invalidatedParameterKeys.push(parameterKey(binding));
       return invalidBinding(binding, invalidAnchor);

@@ -8,6 +8,7 @@ import {
   type LaunchFile,
   type LaunchLocator,
 } from "./launcher.ts";
+import { isLocatorKind } from "./locators/registry.ts";
 
 export const PROJECT_SCHEMA = "program-studio-folder-project";
 export const PROJECT_VERSION = 4;
@@ -117,19 +118,6 @@ function safeFileName(value: string, fallback: string): string {
     .trim();
   return safe || fallback;
 }
-
-const LOCATOR_KINDS = new Set<LaunchLocator["kind"]>([
-  "autoPosition",
-  "rowColumn",
-  "startColumn",
-  "wholeLine",
-  "multiLine",
-  "delimited",
-  "marker",
-  "jsonPath",
-  "xmlPath",
-  "pattern",
-]);
 
 function normalizeRelativePath(value: string): string {
   return value
@@ -248,7 +236,7 @@ function validLocator(value: unknown): value is LaunchLocator {
   return (
     isRecord(value) &&
     typeof value.kind === "string" &&
-    LOCATOR_KINDS.has(value.kind as LaunchLocator["kind"])
+    isLocatorKind(value.kind)
   );
 }
 

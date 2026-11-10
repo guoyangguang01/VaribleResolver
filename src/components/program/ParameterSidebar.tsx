@@ -13,6 +13,7 @@ import {
   type LaunchFile,
   type OutputExtraction,
 } from "../../lib/launcher";
+import { locatorLabel } from "../../lib/programWorkspace";
 import { AddIcon, FolderIcon } from "./ProgramIcons";
 
 export interface ParameterFileGroup {
@@ -50,12 +51,6 @@ interface ParameterSidebarProps {
   >;
   setParameterQuery: Dispatch<SetStateAction<string>>;
   setTab: Dispatch<SetStateAction<"files" | "parameters">>;
-}
-
-function locatorLabel(binding: LaunchBinding): string {
-  if (binding.scope === "free") return "自由参数";
-  if (binding.locatorInvalid) return "定位失效";
-  return binding.locator.kind;
 }
 
 function formatBytes(bytes: number): string {

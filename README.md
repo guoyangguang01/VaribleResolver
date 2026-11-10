@@ -159,4 +159,6 @@ MyProject/
 ## 文档
 
 - [程序启动与参数绑定指南](docs/program-launcher.md)
+- [定位策略规格](docs/locator-strategies.md)
+- [变量定位规则与扩展指南](docs/variable-localization-rules.md)
 - [行定位自动重定位方案](docs/line-relocation-plan.md)

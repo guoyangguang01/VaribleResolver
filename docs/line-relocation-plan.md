@@ -13,6 +13,8 @@
 
 本文档描述已完成的第一阶段实现。跨行编辑会自动更新行坐标；同一行内的列偏移仍不在当前范围内。
 
+各定位类型的解析和重定位行为见 [定位策略规格](./locator-strategies.md)。
+
 ## 2. 实现前的问题
 
 当前编辑器只把完整的新文本传给上层：
@@ -44,7 +46,7 @@
 - 目标文本被直接编辑时，将新的解析结果写入 `defaultValue`。
 - 保留 `value` 作为执行模式中的当前输入值，不因编辑器修改而变化。
 - 定位失效状态可显示、可保存，并可由用户重新定位后清除。
-- 不升级工程 schema 版本，保持对 schema v2 和 v3 的读取兼容。
+- 不改变现有工程结构；`locatorInvalid` 继续作为可选字段保存。
 
 ### 3.2 非目标
 
@@ -115,7 +117,7 @@ interface SourceEditorProps {
 ```ts
 interface RelocationResult {
   bindings: LaunchBinding[];
-  invalidatedBindingIds: string[];
+  invalidatedParameterKeys: string[];
 }
 
 function relocateBindingsAfterEdit(
@@ -147,6 +149,8 @@ rowDelta =
 ```
 
 只有发生在目标行起始位置之前的行号变化才影响该目标。目标之后的行插入或删除不影响当前参数。
+
+定位器行号调整由对应策略的 `relocate()` 实现：坐标策略映射行号，语义策略保持规则不变。调度器本身不再根据 `locator.kind` 维护集中式 `switch`。
 
 ## 7. 值更新规则
 
@@ -195,7 +199,7 @@ interface LaunchBinding {
 
 - 该字段为可选字段，不升级工程 schema。
 - 保存工程时，失效状态写入 `parameters.json`。
-- 读取 schema v2 或 v3 工程时，缺少该字段按 `false` 处理。
+- 读取缺少该字段的现有工程时按 `false` 处理。
 - 用户重新设置或应用定位后清除该字段。
 - 参数树显示“定位失效”，并使用明显的错误状态样式。
 - 定位失效的参数不提供高亮范围，点击定位时提示需要重新定位。
@@ -259,7 +263,7 @@ relocateBindingsAfterEdit
 
 - 保存并重新打开工程后，更新后的行定位保持不变。
 - `locatorInvalid` 状态可以保存和恢复。
-- schema v2 和 v3 工程在缺少新字段时仍可正常加载。
+- 现有工程缺少 `locatorInvalid` 时仍可正常加载。
 
 ## 12. 验收标准
 

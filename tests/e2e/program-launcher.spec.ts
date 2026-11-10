@@ -444,20 +444,30 @@ test("edits an existing parameter locator and applies the new range", async ({
   await expect(runner.locator(".runner-locator-mode")).toHaveClass(
     /is-editing/,
   );
+  await runner.getByLabel("识别模式").selectOption("fixedLength");
   await selectInRunner(page, "STATUS: OK");
-  await expect(runner.getByLabel("识别模式")).toHaveValue("auto");
-  await expect(runner.getByLabel("自动定位 Token 预览")).toContainText(
-    "Token 数量",
-  );
+  await expect(runner.getByLabel("识别模式")).toHaveValue("fixedLength");
+  await expect(runner.getByLabel("起始行")).toHaveValue("2");
+  await expect(runner.getByLabel("起始列")).toHaveValue("0");
+  await expect(runner.getByLabel("结束行")).toHaveValue("2");
+  await expect(runner.getByLabel("结束列")).toHaveValue("10");
   await runner.getByRole("button", { name: "应用定位" }).click();
 
   await expect(runner.locator(".runner-binding-meta")).toHaveText(
-    "自动 · R2:C0",
+    "固定长度 · R2:C0",
   );
   await runner.getByRole("tab", { name: "参数属性" }).click();
   await expect(runner.getByLabel("参数定位信息")).toContainText(
-    "Token 定位",
+    "起始行",
   );
+  await expect(runner.getByLabel("参数定位信息")).toContainText(
+    "起始列",
+  );
+
+  await runner.getByRole("button", { name: "修改 42 定位" }).click();
+  await expect(runner.getByLabel("识别模式")).toHaveValue("fixedLength");
+  await selectInRunner(page, "VALUE: 42");
+  await expect(runner.getByLabel("识别模式")).toHaveValue("fixedLength");
 });
 
 test("loads and saves a folder project with files and launch configuration", async ({

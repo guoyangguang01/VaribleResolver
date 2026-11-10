@@ -49,11 +49,14 @@
 | XML 路径 | `/root/item[1]/@attribute`、`/root/item/text()` |
 | 模式匹配 | 正则表达式、捕获组和出现序号 |
 
-模式定义位于 [launcher.ts](../src/lib/launcher.ts)，界面位于 [ProgramLauncher.tsx](../src/components/ProgramLauncher.tsx)。
+完整字段、默认值、示例、解析规则和限制见 [定位策略规格](./locator-strategies.md)。
+
+定位器类型和策略接口位于 [model.ts](../src/lib/locators/model.ts)，模式与策略映射位于 [registry.ts](../src/lib/locators/registry.ts)，具体实现位于 [strategies](../src/lib/locators/strategies)。定位字段编辑器位于 [locator-editor](../src/components/program/locator-editor)。
 
 ## 写回原则
 
 - 自动和固定长度绑定只替换选区的坐标范围，不使用变量名或相邻文本匹配。
+- 分段、起始列、整行、多行、不定行和模式匹配按原文写回，不自动增加语言字符串引号。
 - JSON 字符串写回会编码为合法 JSON 字符串；数字和布尔值按原始 JSON 类型写入。
 - XML 属性和文本写回会转义 XML 实体。
 - 多输入写回先校验全部范围，再从文本末尾向前替换，避免偏移变化。
@@ -61,7 +64,7 @@
 
 ## 扩展规则
 
-新增通用赋值语法时，应修改统一解析器的语法层，而不是增加文件类型分支。新增定位方式时，应扩展 `LaunchLocator`、解析函数、模式表单和测试数据。
+新增通用赋值语法时，应修改统一解析器的语法层，而不是增加文件类型分支。新增定位方式时，应同步修改 `LaunchLocator` 类型、新增独立策略模块、注册模式映射、增加字段编辑器和对应的解析/写回/重定位测试。具体步骤见 [定位策略规格](./locator-strategies.md#14-扩展新策略)。
 
 以下内容仍属于文本启发式边界：
 

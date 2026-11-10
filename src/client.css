@@ -1323,45 +1323,8 @@ body.is-resizing * {
   gap: 0 8px;
 }
 
-.program-runner .runner-token-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 4px 0 10px;
-  padding: 7px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface-subtle);
-}
-
-.program-runner .runner-token-preview-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.program-runner .runner-token-preview-heading span,
-.program-runner .runner-token-preview > small {
-  color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.program-runner .runner-token-preview-heading strong {
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-
 .program-runner .runner-mode-wide {
   grid-column: 1 / -1;
-}
-
-.program-runner .runner-mode-hint {
-  margin: 4px 0 12px;
-  color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.55;
 }
 
 .program-runner .runner-locator-edit-actions {

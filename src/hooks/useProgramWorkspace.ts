@@ -25,7 +25,6 @@ import {
   LauncherError,
   FREE_PARAMETER_SCOPE,
   buildLaunchCommand,
-  createAutoPositionLocator,
   createBindingFromSelection,
   createLaunchFile,
   createLocatorForMode,
@@ -43,7 +42,6 @@ import {
   type LaunchBinding,
   type LaunchBindingDirection,
   type LaunchFile,
-  type LaunchLocator,
   type LaunchLocatorMode,
   type LocatorModeValues,
   type OutputExtraction,
@@ -326,38 +324,6 @@ export function useProgramWorkspace() {
   const editingBinding = bindings.find(
     (binding) => parameterKey(binding) === editingBindingId,
   );
-  const autoTokenRangePreview = useMemo(() => {
-    if (
-      !editingBindingId ||
-      locatorMode !== "auto" ||
-      !activeFile ||
-      selection.end <= selection.start
-    ) {
-      return null;
-    }
-    try {
-      return (
-        createAutoPositionLocator(activeFile, selection).tokenRange ?? null
-      );
-    } catch {
-      return null;
-    }
-  }, [
-    activeFile,
-    editingBindingId,
-    locatorMode,
-    selection.end,
-    selection.start,
-  ]);
-  const visibleAutoTokenRange =
-    locatorMode === "auto"
-      ? autoTokenRangePreview ??
-        (editingBinding &&
-        isFileBinding(editingBinding) &&
-        editingBinding.locator.kind === "autoPosition"
-          ? editingBinding.locator.tokenRange ?? null
-          : null)
-      : null;
   const visibleBindings = useMemo(() => {
     const query = parameterQuery.trim().toLowerCase();
     return bindings.filter((binding) => {
@@ -609,9 +575,6 @@ export function useProgramWorkspace() {
 
   useEffect(() => {
     if (!activeFile || selection.end <= selection.start) return;
-    if (editingBindingId) {
-      setLocatorMode("auto");
-    }
     const startRow =
       activeFile.content.slice(0, selection.start).split("\n").length;
     const endRow =
@@ -1557,24 +1520,11 @@ export function useProgramWorkspace() {
       return;
     }
     try {
-      const locator =
-        locatorMode === "auto" && selection.end > selection.start
-          ? createAutoPositionLocator(file, selection)
-          : locatorMode === "auto"
-          ? ({
-              kind: "autoPosition",
-              startRowIndex: locatorModeValues.startRowIndex ?? 1,
-              startColumnIndex: locatorModeValues.startColumnIndex ?? 0,
-              endRowIndex:
-                locatorModeValues.endRowIndex ??
-                locatorModeValues.startRowIndex ??
-                1,
-              endColumnIndex:
-                locatorModeValues.endColumnIndex ??
-                locatorModeValues.startColumnIndex ??
-                0,
-            } satisfies LaunchLocator)
-          : createLocatorForMode(locatorMode, locatorModeValues);
+      const locator = createLocatorForMode(
+        locatorMode,
+        locatorModeValues,
+        { content: file.content, selection },
+      );
       const resolved = resolveLaunchBinding(file.content, locator);
       setBindings((current) =>
         current.map((candidate) =>
@@ -1840,6 +1790,6 @@ export function useProgramWorkspace() {
 
 
   return {
-    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleAutoTokenRange, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterFileLabel, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
+    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterFileLabel, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
   };
 }
