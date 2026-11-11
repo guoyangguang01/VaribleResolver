@@ -37,9 +37,6 @@ try {
   });
 
   payload.manifest.updatedAt = payload.manifest.createdAt;
-  for (const file of payload.manifest.files) {
-    file.path = file.relativePath;
-  }
   await fs.rm(projectDirectory, { recursive: true, force: true });
   await fs.mkdir(projectDirectory, { recursive: true });
   await Promise.all([
@@ -65,12 +62,12 @@ try {
     ),
   ]);
   for (const file of payload.files) {
-    const targetPath = path.resolve(projectDirectory, file.relativePath);
+    const targetPath = path.resolve(projectDirectory, file.path);
     if (
       targetPath !== projectDirectory &&
       !targetPath.startsWith(`${projectDirectory}${path.sep}`)
     ) {
-      throw new Error(`默认工程文件超出目录：${file.relativePath}`);
+      throw new Error(`默认工程文件超出目录：${file.path}`);
     }
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, file.content, "utf8");

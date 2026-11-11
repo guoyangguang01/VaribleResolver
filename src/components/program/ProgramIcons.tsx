@@ -32,6 +32,19 @@ export function CopyIcon() {
   );
 }
 
+export function ReferenceIcon() {
+  return (
+    <SmallIcon>
+      <path
+        d="M9.5 14.5 14.5 9.5M7.2 16.8l-1.1 1.1a3.2 3.2 0 0 1-4.5-4.5l3.1-3.1a3.2 3.2 0 0 1 4.5 0M16.8 7.2l1.1-1.1a3.2 3.2 0 0 1 4.5 4.5l-3.1 3.1a3.2 3.2 0 0 1-4.5 0"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SmallIcon>
+  );
+}
+
 export function PlayIcon() {
   return (
     <SmallIcon>

@@ -8,25 +8,27 @@ import {
   type FreeLaunchBinding,
   type LaunchBinding,
   type LaunchFile,
+  type LaunchFileRole,
   type LaunchLocator,
 } from "./launcher.ts";
 import { isLocatorKind } from "./locators/registry.ts";
 import { restoreSourceLineEndings } from "./variables.ts";
 
 export const PROJECT_SCHEMA = "program-studio-folder-project";
-export const PROJECT_VERSION = 4;
+export const PROJECT_VERSION = 5;
 export type ProjectSchemaVersion = typeof PROJECT_VERSION;
-export type ProjectFileRole =
-  | "input"
-  | "output-reference"
-  | "support"
-  | "program-entry";
+export type ProjectFileRole = LaunchFileRole;
 export type ProjectLaunchMode = "direct" | "shell";
 
 export interface ProjectFileEntry {
   path: string;
-  relativePath: string;
   roles: ProjectFileRole[];
+}
+
+export interface ProjectModule {
+  name: string;
+  files: string[];
+  order: number;
 }
 
 export interface ProjectOutputSpec {
@@ -54,6 +56,7 @@ export interface ProjectManifest {
   parameterFile: "parameters.json";
   outputFile?: "outputs.json";
   files: ProjectFileEntry[];
+  modules: ProjectModule[];
 }
 
 export interface ProjectLaunchConfig {
@@ -73,7 +76,7 @@ export interface ProjectParameterConfig {
 }
 
 export interface ProjectFolderFile {
-  relativePath: string;
+  path: string;
   content: string;
 }
 
@@ -98,6 +101,7 @@ export interface ProjectSnapshot {
   bindings: LaunchBinding[];
   outputs?: ProjectOutputSpec[];
   createdAt?: string;
+  modules?: ProjectModule[];
 }
 
 export class ProjectFormatError extends Error {
@@ -163,11 +167,26 @@ function replaceFilePaths(
   return result;
 }
 
+function expandProjectDirectoryMacro(
+  value: string,
+  projectDirectory: string | null,
+  mode: "edit" | "run",
+): string {
+  if (mode !== "run" || !projectDirectory) return value;
+  const nativeProjectPath = projectDirectory.includes("\\")
+    ? projectDirectory.replace(/\//g, "\\")
+    : projectDirectory.replace(/\\/g, "/");
+  return value.replaceAll("#UCW_PRJ_DIR#", nativeProjectPath);
+}
+
 const FILE_ROLES = new Set<ProjectFileRole>([
   "input",
   "output-reference",
   "support",
   "program-entry",
+  "template",
+  "generated",
+  "resource",
 ]);
 
 const LAUNCH_MODES = new Set<ProjectLaunchMode>([
@@ -188,8 +207,9 @@ function isSafeRelativePath(value: string): boolean {
 function fileRoles(
   filePath: string,
   bindings: LaunchBinding[],
+  explicitRoles?: LaunchFileRole[],
 ): ProjectFileRole[] {
-  const roles = new Set<ProjectFileRole>();
+  const roles = new Set<ProjectFileRole>(explicitRoles ?? []);
   for (const binding of bindings) {
     if (!isFileBinding(binding)) continue;
     if (binding.filePath !== filePath) continue;
@@ -220,23 +240,17 @@ function outputName(
   return candidate;
 }
 
-function sourceDirectory(value: string): string {
-  const normalized = normalizeRelativePath(value);
-  const separator = normalized.lastIndexOf("/");
-  return separator >= 0 ? normalized.slice(0, separator) : "";
+function fileStemFromPath(value: string): string {
+  const baseName = normalizeRelativePath(value).split("/").at(-1) ?? value;
+  const extensionIndex = baseName.lastIndexOf(".");
+  return extensionIndex > 0 ? baseName.slice(0, extensionIndex) : baseName;
 }
 
 function packagedWorkingDirectory(snapshot: ProjectSnapshot): string {
   const configured = snapshot.workingDirectory.trim();
-  if (!configured) return "files";
-  const normalized = normalizeRelativePath(configured);
-  if (/(?:^|\/)files\/?$/i.test(normalized)) return "files";
-  const sourceDirectories = new Set(
-    snapshot.files.map((file) =>
-      sourceDirectory(file.sourcePath ?? file.path).toLowerCase(),
-    ),
-  );
-  return sourceDirectories.has(normalized.toLowerCase()) ? "files" : configured;
+  return /^#UCW_PRJ_DIR#(?:[\\/]|$)/i.test(configured)
+    ? configured
+    : "files";
 }
 
 function validLocator(value: unknown): value is LaunchLocator {
@@ -301,8 +315,7 @@ function parseProjectOutputs(
 
   const referenceByStoredPath = new Map<string, string>();
   for (const entry of fileEntries) {
-    referenceByStoredPath.set(entry.relativePath, entry.relativePath);
-    referenceByStoredPath.set(entry.path, entry.relativePath);
+    referenceByStoredPath.set(entry.path, entry.path);
   }
   const coveredReferences = new Set(
     outputs.flatMap((output) =>
@@ -338,8 +351,7 @@ function parseProjectOutputs(
 
 function parseFileRoles(
   value: unknown,
-  sourcePath: string,
-  relativePath: string,
+  path: string,
   bindings: unknown[],
 ): ProjectFileRole[] {
   if (value !== undefined && !Array.isArray(value)) {
@@ -356,7 +368,7 @@ function parseFileRoles(
   }
   const roles = new Set<ProjectFileRole>();
   for (const binding of bindings) {
-    if (!isRecord(binding) || binding.filePath !== relativePath && binding.filePath !== sourcePath) {
+    if (!isRecord(binding) || binding.filePath !== path) {
       continue;
     }
     roles.add(
@@ -367,6 +379,115 @@ function parseFileRoles(
   return [...roles];
 }
 
+function parseProjectModules(
+  value: unknown,
+  files: ProjectFileEntry[],
+  bindings: unknown[],
+): ProjectModule[] {
+  if (value !== undefined && !Array.isArray(value)) {
+    throw new ProjectFormatError("工程模块清单必须是数组。");
+  }
+  const filePaths = new Set(files.map((file) => file.path));
+  const modules = new Map<string, ProjectModule>();
+  for (const [index, module] of (value ?? []).entries()) {
+    if (!isRecord(module)) {
+      throw new ProjectFormatError(`第 ${index + 1} 个模块配置无效。`);
+    }
+    const name = requiredString(
+      module.name,
+      `manifest.modules[${index}].name`,
+    ).trim();
+    if (!name || modules.has(name)) {
+      throw new ProjectFormatError("模块名称不能为空或重复。");
+    }
+    if (!Array.isArray(module.files)) {
+      throw new ProjectFormatError(`模块“${name}”缺少文件清单。`);
+    }
+    const moduleFiles = module.files.map((filePath) => {
+      const normalized = normalizeRelativePath(
+        requiredString(filePath, `manifest.modules[${index}].files`),
+      );
+      if (!filePaths.has(normalized)) {
+        throw new ProjectFormatError(
+          `模块“${name}”引用了未封装文件：${normalized}`,
+        );
+      }
+      return normalized;
+    });
+    modules.set(name, {
+      name,
+      files: [...new Set(moduleFiles)],
+      order:
+        typeof module.order === "number" && Number.isFinite(module.order)
+          ? module.order
+          : index + 1,
+    });
+  }
+  for (const binding of bindings) {
+    if (
+      !isRecord(binding) ||
+      typeof binding.module !== "string" ||
+      !binding.module.trim() ||
+      typeof binding.filePath !== "string"
+    ) {
+      continue;
+    }
+    const name = binding.module.trim();
+    const filePath = normalizeRelativePath(binding.filePath);
+    if (!filePaths.has(filePath)) continue;
+    const module = modules.get(name) ?? {
+      name,
+      files: [],
+      order: modules.size + 1,
+    };
+    if (!module.files.includes(filePath)) module.files.push(filePath);
+    modules.set(name, module);
+  }
+  return [...modules.values()].sort(
+    (left, right) => left.order - right.order,
+  );
+}
+
+function projectModules(
+  files: ProjectFileEntry[],
+  bindings: StoredLaunchBinding[],
+  configured: ProjectModule[] | undefined,
+): ProjectModule[] {
+  const entries = new Map<
+    string,
+    { order: number; files: Set<string> }
+  >();
+  for (const module of configured ?? []) {
+    const name = module.name.trim();
+    if (!name) continue;
+    entries.set(name, {
+      order: module.order,
+      files: new Set(module.files),
+    });
+  }
+  for (const binding of bindings) {
+    const filePath = binding.filePath;
+    if (typeof filePath !== "string") continue;
+    const moduleName = binding.module?.trim();
+    if (!moduleName) continue;
+    const entry = entries.get(moduleName) ?? {
+      order: entries.size + 1,
+      files: new Set<string>(),
+    };
+    entry.files.add(filePath);
+    entries.set(moduleName, entry);
+  }
+  const knownFiles = new Set(files.map((file) => file.path));
+  return [...entries]
+    .map(([name, entry]) => ({
+      name,
+      order: entry.order,
+      files: [...entry.files].filter((filePath) => knownFiles.has(filePath)),
+    }))
+    .filter((module) => module.files.length > 0)
+    .sort((left, right) => left.order - right.order);
+}
+
 export function serializeProjectFolder(
   snapshot: ProjectSnapshot,
 ): ProjectFolderPayload {
@@ -375,9 +496,7 @@ export function serializeProjectFolder(
   const folderName = safeFileName(name, "program-project");
   const usedFileNames = new Set<string>();
   const files = snapshot.files.map((file, index) => ({
-    path: file.sourcePath ?? file.path,
-    roles: fileRoles(file.path, snapshot.bindings),
-    relativePath: (() => {
+    path: (() => {
       const baseName = safeFileName(file.name, `file-${index + 1}.txt`);
       const extensionIndex = baseName.lastIndexOf(".");
       const stem =
@@ -393,19 +512,24 @@ export function serializeProjectFolder(
       usedFileNames.add(candidate.toLowerCase());
       return candidate;
     })(),
+    roles: fileRoles(
+      file.path,
+      snapshot.bindings,
+      file.roles,
+    ),
   }));
-  const relativePathByFilePath = new Map(
+  const projectPathByFilePath = new Map(
     snapshot.files.map((file, index) => [
       file.path,
-      files[index].relativePath,
+      files[index].path,
     ]),
   );
   const usedOutputNames = new Set<string>();
   const inferredOutputReferences = new Set<string>();
   for (const binding of snapshot.bindings) {
     if (binding.direction !== "output" || !isFileBinding(binding)) continue;
-    const relativePath = relativePathByFilePath.get(binding.filePath);
-    if (relativePath) inferredOutputReferences.add(relativePath);
+    const projectPath = projectPathByFilePath.get(binding.filePath);
+    if (projectPath) inferredOutputReferences.add(projectPath);
   }
   const outputs: ProjectOutputSpec[] =
     snapshot.outputs && snapshot.outputs.length > 0
@@ -414,7 +538,7 @@ export function serializeProjectFolder(
             ? normalizeRelativePath(output.referenceFile)
             : undefined;
           const referenceFile = configuredReference
-            ? relativePathByFilePath.get(configuredReference) ??
+            ? projectPathByFilePath.get(configuredReference) ??
               configuredReference
             : undefined;
           if (
@@ -462,7 +586,7 @@ export function serializeProjectFolder(
     });
     coveredOutputReferences.add(referenceFile);
   }
-  const outputNameByRelativePath = new Map(
+  const outputNameByPath = new Map(
     outputs.flatMap((output) =>
       output.referenceFile
         ? [[output.referenceFile, output.name] as const]
@@ -473,6 +597,11 @@ export function serializeProjectFolder(
     (binding): StoredLaunchBinding => {
       const common = {
         name: binding.name,
+        module:
+          binding.module ??
+          (isFileBinding(binding)
+            ? fileStemFromPath(binding.filePath)
+            : undefined),
         inputReference: binding.inputReference,
         outputReference: binding.outputReference,
         parameterType: binding.parameterType,
@@ -487,8 +616,8 @@ export function serializeProjectFolder(
           direction: binding.direction,
         };
       }
-      const relativePath = relativePathByFilePath.get(binding.filePath);
-      if (!relativePath) {
+      const projectPath = projectPathByFilePath.get(binding.filePath);
+      if (!projectPath) {
         throw new ProjectFormatError(
           `参数“${binding.name}”引用了未封装文件：${binding.filePath}`,
         );
@@ -496,19 +625,20 @@ export function serializeProjectFolder(
       return {
         ...common,
         direction: binding.direction,
-        filePath: relativePath,
+        filePath: projectPath,
         locator: binding.locator,
         locatorInvalid: binding.locatorInvalid,
         ...(binding.direction === "output"
           ? {
               outputName:
                 binding.outputName ??
-                outputNameByRelativePath.get(relativePath),
+                outputNameByPath.get(projectPath),
             }
           : {}),
       };
     },
   );
+  const modules = projectModules(files, bindings, snapshot.modules);
   const manifest: ProjectManifest = {
     schema: PROJECT_SCHEMA,
     schemaVersion: PROJECT_VERSION,
@@ -519,11 +649,12 @@ export function serializeProjectFolder(
     parameterFile: "parameters.json",
     outputFile: "outputs.json",
     files,
+    modules,
   };
   const pathReplacements = new Map(
     snapshot.files.map((file, index) => [
       file.path,
-      files[index].relativePath.replace(/^files\//, ""),
+      files[index].path.replace(/^files\//, ""),
     ]),
   );
   return {
@@ -544,7 +675,7 @@ export function serializeProjectFolder(
     parameters: { bindings },
     outputs: { outputs },
     files: snapshot.files.map((file, index) => ({
-      relativePath: files[index].relativePath,
+      path: files[index].path,
       content: restoreSourceLineEndings(file.content, file.lineEnding),
     })),
   };
@@ -571,7 +702,10 @@ export function parseProjectFolder(
   if (rawManifest.schema !== PROJECT_SCHEMA) {
     throw new ProjectFormatError("不是 Program Studio 工程目录。");
   }
-  if (rawManifest.schemaVersion !== PROJECT_VERSION) {
+  if (
+    rawManifest.schemaVersion !== PROJECT_VERSION &&
+    rawManifest.schemaVersion !== 4
+  ) {
     throw new ProjectFormatError(
       `不支持的工程版本：${String(rawManifest.schemaVersion)}`,
     );
@@ -599,22 +733,20 @@ export function parseProjectFolder(
       if (!isRecord(entry)) {
         throw new ProjectFormatError("工程文件清单条目无效。");
       }
-      const path = requiredString(entry.path, "manifest.files.path");
-      const relativePath = requiredString(
-        entry.relativePath,
-        "manifest.files.relativePath",
+      const path = requiredString(
+        entry.path ?? entry.relativePath,
+        "manifest.files.path",
       );
       return {
         path,
-        relativePath,
-        roles: parseFileRoles(
-          entry.roles,
-          path,
-          relativePath,
-          rawBindings,
-        ),
+        roles: parseFileRoles(entry.roles, path, rawBindings),
       };
     },
+  );
+  const parsedModules = parseProjectModules(
+    rawManifest.modules,
+    parsedFileEntries,
+    rawBindings,
   );
   const projectOutputs = parseProjectOutputs(
     payload.outputs,
@@ -638,7 +770,7 @@ export function parseProjectFolder(
         throw new ProjectFormatError("工程封装文件条目无效。");
       }
       return [
-        requiredString(file.relativePath, "files.relativePath"),
+        requiredString(file.path ?? file.relativePath, "files.path"),
         requiredString(file.content, "files.content"),
       ];
     }),
@@ -648,37 +780,36 @@ export function parseProjectFolder(
     payload.folderPath.trim()
       ? payload.folderPath
       : null;
-  const filePathByRelativePath = new Map<string, string>();
-  const filePathBySourcePath = new Map<string, string>();
-  const runtimePathBySourcePath = new Map<string, string>();
-  const runtimePathByRelativePath = new Map<string, string>();
+  const filePathByProjectPath = new Map<string, string>();
+  const runtimePathByProjectPath = new Map<string, string>();
   const files = rawManifest.files.map((entry) => {
     if (!isRecord(entry)) {
       throw new ProjectFormatError("工程文件清单条目无效。");
     }
-    const relativePath = requiredString(
-      entry.relativePath,
-      "manifest.files.relativePath",
-    );
-    const content = fileContentByPath.get(relativePath);
-    if (content === undefined) {
-      throw new ProjectFormatError(`工程缺少封装文件：${relativePath}`);
-    }
-    const sourcePath = requiredString(
-      entry.path,
+    const projectPath = requiredString(
+      entry.path ?? entry.relativePath,
       "manifest.files.path",
     );
-    const runtimePath = folderPath
-      ? joinRuntimePath(folderPath, relativePath)
-      : sourcePath;
-    const file = createLaunchFile(runtimePath, content, sourcePath);
-    runtimePathBySourcePath.set(sourcePath, runtimePath);
-    runtimePathByRelativePath.set(
-      relativePath.replace(/^files\//, ""),
+    const content = fileContentByPath.get(projectPath);
+    if (content === undefined) {
+      throw new ProjectFormatError(`工程缺少封装文件：${projectPath}`);
+    }
+    const runtimePath =
+      parseMode === "run" && folderPath
+        ? joinRuntimePath(folderPath, projectPath)
+        : projectPath;
+    const file = createLaunchFile(runtimePath, content);
+    file.roles = parseFileRoles(
+      entry.roles,
+      projectPath,
+      rawBindings,
+    );
+    runtimePathByProjectPath.set(projectPath, runtimePath);
+    runtimePathByProjectPath.set(
+      projectPath.replace(/^files\//, ""),
       runtimePath,
     );
-    filePathByRelativePath.set(relativePath, file.path);
-    filePathBySourcePath.set(sourcePath, file.path);
+    filePathByProjectPath.set(projectPath, file.path);
     return file;
   });
   const filePaths = new Set(files.map((file) => file.path));
@@ -722,11 +853,9 @@ export function parseProjectFolder(
           outputByReference.get(normalizeRelativePath(storedFilePath))
         : undefined;
     const referenceFilePath =
-      filePathByRelativePath.get(
-        outputSpec?.referenceFile ?? storedFilePath,
-      ) ??
-      filePathBySourcePath.get(
-        outputSpec?.referenceFile ?? storedFilePath,
+      filePathByProjectPath.get(
+        outputSpec?.referenceFile ??
+          normalizeRelativePath(storedFilePath),
       ) ??
       storedFilePath;
     const outputRelativePath =
@@ -734,9 +863,9 @@ export function parseProjectFolder(
         ? outputSpec?.runtimePath
         : outputSpec?.referenceFile;
     const filePath =
-      outputRelativePath && folderPath
+      outputRelativePath && folderPath && parseMode === "run"
         ? joinRuntimePath(folderPath, outputRelativePath)
-        : referenceFilePath;
+        : outputRelativePath ?? referenceFilePath;
     if (
       !free &&
       (direction === "input" || parseMode === "edit") &&
@@ -816,13 +945,25 @@ export function parseProjectFolder(
       binding.defaultValue,
       `parameters[${index}].defaultValue`,
     );
+    const runtimeDefaultValue = expandProjectDirectoryMacro(
+      defaultValue,
+      folderPath,
+      parseMode,
+    );
+    const module =
+      typeof binding.module === "string" && binding.module.trim()
+        ? binding.module.trim()
+        : free
+          ? undefined
+          : fileStemFromPath(storedFilePath);
     const common = {
       name: requiredString(binding.name, `parameters[${index}].name`),
-      value: defaultValue,
+      ...(module ? { module } : {}),
+      value: runtimeDefaultValue,
       parameterType: binding.parameterType,
       ...(inputReference ? { inputReference } : {}),
       ...(outputReference ? { outputReference } : {}),
-      defaultValue,
+      defaultValue: runtimeDefaultValue,
       unit: requiredString(
         binding.unit,
         `parameters[${index}].unit`,
@@ -886,27 +1027,38 @@ export function parseProjectFolder(
               "launch.environment 必须是对象。",
             );
           })();
+  const storedArguments = requiredString(
+    payload.launch.arguments,
+    "launch.arguments",
+  );
   const launch: ProjectLaunchConfig = {
     mode: launchMode,
     program: requiredString(payload.launch.program, "launch.program"),
-    arguments: replaceFilePaths(
-      requiredString(
-        payload.launch.arguments,
-        "launch.arguments",
-      ),
-      new Map([
-        ...runtimePathBySourcePath,
-        ...runtimePathByRelativePath,
-      ]),
-    ),
+    arguments: storedArguments.includes("#UCW_PRJ_DIR#")
+      ? expandProjectDirectoryMacro(
+          storedArguments,
+          folderPath,
+          parseMode,
+        )
+      : replaceFilePaths(
+          storedArguments,
+          runtimePathByProjectPath,
+        ),
     workingDirectory: (() => {
       const stored = requiredString(
         payload.launch.workingDirectory,
         "launch.workingDirectory",
       );
-      return folderPath && !isAbsolutePath(stored)
-        ? joinRuntimePath(folderPath, stored)
-        : stored;
+      const expanded = expandProjectDirectoryMacro(
+        stored,
+        folderPath,
+        parseMode,
+      );
+      return parseMode === "run" &&
+        folderPath &&
+        !isAbsolutePath(expanded)
+        ? joinRuntimePath(folderPath, expanded)
+        : expanded;
     })(),
     ...(environment ? { environment } : {}),
   };
@@ -919,24 +1071,8 @@ export function parseProjectFolder(
     launchFile: "launch.json",
     parameterFile: "parameters.json",
     outputFile: "outputs.json",
-    files: rawManifest.files.map((entry) => {
-      const record = entry as Record<string, unknown>;
-      const path = requiredString(record.path, "manifest.files.path");
-      const relativePath = requiredString(
-        record.relativePath,
-        "manifest.files.relativePath",
-      );
-      return {
-        path,
-        relativePath,
-        roles: parseFileRoles(
-          record.roles,
-          path,
-          relativePath,
-          rawBindings,
-        ),
-      };
-    }),
+    files: parsedFileEntries,
+    modules: parsedModules,
   };
   return {
     manifest,

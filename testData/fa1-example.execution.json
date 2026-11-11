@@ -3,37 +3,54 @@
   "name": "fa1 标准执行示例",
   "referenceConfig": "fa1.config",
   "parameterSource": "fa1.config",
-  "program": "C:\\Program Files\\ANSYS Inc\\v195\\Framework\\bin\\Win64\\RunWB2.exe",
-  "arguments": "-B -R \"{{EXAMPLE_ROOT}}\\workbench.wbjn\"",
-  "workingDirectory": "{{EXAMPLE_ROOT}}",
+  "program": "%AWP_ROOT195%/Framework/bin/Win64/RunWB2.exe",
+  "arguments": "-X -R \"#UCW_PRJ_DIR#/files/workbench.wbjn\"",
+  "workingDirectory": "#UCW_PRJ_DIR#",
   "files": [
     {
       "path": "{{EXAMPLE_ROOT}}\\CFX1.ccl",
-      "asset": "CFX1.ccl"
+      "asset": "CFX1.ccl",
+      "roles": ["input"]
     },
     {
       "path": "{{EXAMPLE_ROOT}}\\Post.cse",
-      "asset": "Post.cse"
+      "asset": "Post.cse",
+      "roles": ["input"]
     },
     {
       "path": "{{EXAMPLE_ROOT}}\\Mechanical_Thermal.py",
-      "asset": "Mechanical_Thermal.py"
+      "asset": "Mechanical_Thermal.py",
+      "roles": ["input"]
     },
     {
       "path": "{{EXAMPLE_ROOT}}\\Mechanical_Structural-2019.py",
-      "asset": "Mechanical_Structural-2019.py"
+      "asset": "Mechanical_Structural-2019.py",
+      "roles": ["input"]
     },
     {
       "path": "{{EXAMPLE_ROOT}}\\workbench.wbjn",
-      "asset": "workbench.wbjn"
+      "asset": "workbench.wbjn",
+      "roles": ["input", "program-entry"]
     },
     {
       "path": "{{EXAMPLE_ROOT}}\\fa1-example\\Stress_Envelope_Summary.txt",
-      "asset": "fa1-example/Stress_Envelope_Summary.txt"
+      "asset": "fa1-example/Stress_Envelope_Summary.txt",
+      "roles": ["output-reference"]
     },
     {
-      "path": "{{EXAMPLE_ROOT}}\\fa1-example\\ResultManifest.txt",
-      "asset": "fa1-example/ResultManifest.txt"
+      "path": "{{EXAMPLE_ROOT}}\\CFX_setup_0.ccl",
+      "asset": "CFX_setup_0.ccl",
+      "roles": ["support"]
+    },
+    {
+      "path": "{{EXAMPLE_ROOT}}\\jiaobencfx_coord.ccl",
+      "asset": "jiaobencfx_coord.ccl",
+      "roles": ["support"]
+    },
+    {
+      "path": "{{EXAMPLE_ROOT}}\\31acc.txt",
+      "asset": "31acc.txt",
+      "roles": ["resource"]
     }
   ]
 }

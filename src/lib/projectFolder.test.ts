@@ -48,23 +48,26 @@ test("serializes a folder project with separate launch and parameter files", () 
   assert.equal(project.manifest.parameterFile, "parameters.json");
   assert.equal(project.manifest.outputFile, "outputs.json");
   assert.equal(project.files.length, 1);
-  assert.equal(project.files[0].relativePath, "files/CFX1.ccl");
+  assert.equal(project.files[0].path, "files/CFX1.ccl");
   assert.equal(project.files[0].content, "Total Time = 0.04 [s]");
   assert.equal(project.launch.program, "C:\\Tools\\runner.exe");
   assert.equal(project.parameters.bindings.length, 1);
   assert.equal("id" in project.parameters.bindings[0], false);
   assert.equal(
     project.parameters.bindings[0].filePath,
-    project.manifest.files[0].relativePath,
+    project.manifest.files[0].path,
   );
   assert.doesNotMatch(
     project.parameters.bindings[0].filePath,
     /^[A-Za-z]:[\\/]/,
   );
-  assert.equal(project.manifest.schemaVersion, 4);
+  assert.equal(project.manifest.schemaVersion, 5);
   assert.equal(project.launch.mode, "direct");
   assert.equal(project.launch.workingDirectory, "files");
   assert.deepEqual(project.manifest.files[0].roles, ["input"]);
+  assert.deepEqual(project.manifest.modules, [
+    { name: "CFX1", files: ["files/CFX1.ccl"], order: 1 },
+  ]);
   assert.deepEqual(project.outputs.outputs, []);
   assert.equal(project.parameters.bindings[0].parameterType, "number");
   assert.equal(project.parameters.bindings[0].defaultValue, "0.01");
@@ -85,12 +88,12 @@ test("parses a folder project with its generated project path", () => {
   assert.equal(parsed.manifest.name, "fa1 示例工程");
   assert.equal(
     parsed.launch.arguments,
-    "--config D:\\Generated\\fa1\\files\\CFX1.ccl",
+    "--config files/CFX1.ccl",
   );
   assert.equal(parsed.files.length, 1);
   assert.equal(
     parsed.files[0].path,
-    "D:\\Generated\\fa1\\files\\CFX1.ccl",
+    "files/CFX1.ccl",
   );
   assert.equal(parsed.files[0].content, "Total Time = 0.04 [s]");
   assert.equal(parsed.bindings.length, 1);
@@ -103,7 +106,7 @@ test("parses a folder project with its generated project path", () => {
   assert.equal(parsed.bindings[0].description, "计算总时长");
   assert.equal(
     parsed.launch.workingDirectory,
-    "D:\\Generated\\fa1\\files",
+    "files",
   );
 });
 
@@ -119,6 +122,46 @@ test("ignores legacy persisted runtime values and initializes them from defaults
 
   assert.equal(parsed.bindings[0].defaultValue, "0.01");
   assert.equal(parsed.bindings[0].value, "0.01");
+});
+
+test("preserves project directory macros in edit mode and expands them at runtime", () => {
+  const project = sampleProject();
+  project.parameters.bindings[0].defaultValue =
+    "#UCW_PRJ_DIR#\\files\\CFX1.ccl";
+  project.launch.arguments =
+    '-R "#UCW_PRJ_DIR#/files/CFX1.ccl"';
+  project.launch.workingDirectory = "#UCW_PRJ_DIR#";
+
+  const editProject = parseProjectFolder(project);
+  assert.equal(
+    editProject.bindings[0].defaultValue,
+    "#UCW_PRJ_DIR#\\files\\CFX1.ccl",
+  );
+  assert.equal(
+    editProject.launch.arguments,
+    '-R "#UCW_PRJ_DIR#/files/CFX1.ccl"',
+  );
+  assert.equal(editProject.launch.workingDirectory, "#UCW_PRJ_DIR#");
+
+  const runProject = parseProjectFolder(
+    {
+      ...project,
+      folderPath: "D:\\Generated\\macro-project",
+    },
+    { mode: "run" },
+  );
+  assert.equal(
+    runProject.bindings[0].defaultValue,
+    "D:\\Generated\\macro-project\\files\\CFX1.ccl",
+  );
+  assert.equal(
+    runProject.launch.arguments,
+    '-R "D:\\Generated\\macro-project/files/CFX1.ccl"',
+  );
+  assert.equal(
+    runProject.launch.workingDirectory,
+    "D:\\Generated\\macro-project",
+  );
 });
 
 test("normalizes project file contents in memory without changing the payload", () => {
@@ -342,7 +385,7 @@ test("persists free input parameters without file or locator bindings", () => {
   );
 });
 
-test("rewrites source file paths to generated project files", () => {
+test("rewrites imported file paths to the fixed files directory", () => {
   const config = createLaunchFile(
     "C:\\Cases\\fa1\\CFX1.ccl",
     "Total Time = 0.04 [s]",
@@ -363,11 +406,11 @@ test("rewrites source file paths to generated project files", () => {
   });
   assert.equal(
     parsed.launch.arguments,
-    '--config "D:\\Generated\\path-project\\files\\CFX1.ccl"',
+    '--config "files/CFX1.ccl"',
   );
 });
 
-test("maps the source directory to files but preserves a custom working directory", () => {
+test("uses the fixed files working directory", () => {
   const config = createLaunchFile(
     "C:\\Cases\\fa1\\CFX1.ccl",
     "Total Time = 0.04 [s]",
@@ -380,21 +423,19 @@ test("maps the source directory to files but preserves a custom working director
     files: [config],
     bindings: [],
   });
-  assert.equal(custom.launch.workingDirectory, "D:\\Shared\\runtime");
+  assert.equal(custom.launch.workingDirectory, "files");
 
   const parsed = parseProjectFolder({
     ...custom,
     folderPath: "D:\\Generated\\custom-working-directory",
   });
-  assert.equal(parsed.launch.workingDirectory, "D:\\Shared\\runtime");
+  assert.equal(parsed.launch.workingDirectory, "files");
 });
 
-test("preserves the original source path across a project round trip", () => {
-  const originalPath = "C:\\Cases\\fa1\\CFX1.ccl";
+test("uses only the fixed project path across a project round trip", () => {
   const config = createLaunchFile(
     "C:\\Cases\\fa1\\working\\CFX1.ccl",
     "Total Time = 0.04 [s]",
-    originalPath,
   );
   const project = serializeProjectFolder({
     name: "原文件工程",
@@ -405,17 +446,16 @@ test("preserves the original source path across a project round trip", () => {
     bindings: [],
   });
 
-  assert.equal(project.manifest.files[0].path, originalPath);
+  assert.equal(project.manifest.files[0].path, "files/CFX1.ccl");
   const parsed = parseProjectFolder({
     ...project,
     folderPath: "D:\\Generated\\original-project",
   });
   assert.equal(
     parsed.files[0].path,
-    "D:\\Generated\\original-project\\files\\CFX1.ccl",
+    "files/CFX1.ccl",
   );
-  assert.equal(parsed.files[0].sourcePath, originalPath);
-  assert.equal(parsed.files[0].sourceContent, "Total Time = 0.04 [s]");
+  assert.equal("sourcePath" in parsed.files[0], false);
 
   const reserialized = serializeProjectFolder({
     name: parsed.manifest.name,
@@ -426,11 +466,8 @@ test("preserves the original source path across a project round trip", () => {
     bindings: parsed.bindings,
     createdAt: parsed.manifest.createdAt,
   });
-  assert.equal(reserialized.manifest.files[0].path, originalPath);
-  assert.equal(
-    reserialized.files[0].relativePath,
-    project.files[0].relativePath,
-  );
+  assert.equal(reserialized.manifest.files[0].path, "files/CFX1.ccl");
+  assert.equal(reserialized.files[0].path, "files/CFX1.ccl");
 });
 
 test("preserves locator invalid state in a folder project", () => {

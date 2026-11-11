@@ -7,11 +7,49 @@ import {
 } from "./launcher.ts";
 import {
   executeProjectWithOverrides,
+  mergeInputOverrides,
   type ProjectExecutionAdapter,
   type ProjectExecutionSnapshot,
   type ProjectProgramRequest,
   type ProjectProgramResult,
 } from "./projectExecution.ts";
+
+test("runtime input overrides replace default input values", () => {
+  const merged = mergeInputOverrides(
+    [
+      {
+        fileName: "input.txt",
+        parameterName: "温度",
+        value: "20",
+      },
+      {
+        fileName: "input.txt",
+        parameterName: "压力",
+        value: "10",
+      },
+    ],
+    [
+      {
+        fileName: "input",
+        parameterName: "温度",
+        value: "42",
+      },
+    ],
+  );
+
+  assert.deepEqual(merged, [
+    {
+      fileName: "input",
+      parameterName: "温度",
+      value: "42",
+    },
+    {
+      fileName: "input.txt",
+      parameterName: "压力",
+      value: "10",
+    },
+  ]);
+});
 
 const INPUT_PATH = "C:\\case\\input.txt";
 const OUTPUT_PATH = "C:\\case\\output.txt";

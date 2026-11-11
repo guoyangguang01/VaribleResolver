@@ -2,6 +2,27 @@ import { spawn } from "node:child_process";
 
 const MAX_OUTPUT_BYTES = 1024 * 1024;
 
+export function expandEnvironmentVariables(value, environment) {
+  const missing = [];
+  const expanded = String(value).replace(/%([^%]+)%/g, (match, name) => {
+    const key = Object.keys(environment).find(
+      (candidate) => candidate.toLowerCase() === name.toLowerCase(),
+    );
+    const replacement = key ? environment[key] : undefined;
+    if (replacement === undefined) {
+      missing.push(name);
+      return match;
+    }
+    return replacement;
+  });
+  if (missing.length > 0) {
+    throw new Error(
+      `环境变量未设置：${[...new Set(missing)].join(", ")}`,
+    );
+  }
+  return expanded;
+}
+
 function captureChunk(chunks, state, chunk) {
   if (state.bytes >= MAX_OUTPUT_BYTES) return;
   const remaining = MAX_OUTPUT_BYTES - state.bytes;
@@ -17,6 +38,24 @@ export function runProgram(request) {
   const args = Array.isArray(request.args)
     ? request.args.map((argument) => String(argument))
     : [];
+  const environment = { ...process.env, ...request.environment };
+  let program;
+  let expandedArgs;
+  let cwd;
+  try {
+    program = expandEnvironmentVariables(
+      request.program.trim(),
+      environment,
+    );
+    expandedArgs = args.map((argument) =>
+      expandEnvironmentVariables(argument, environment),
+    );
+    cwd = request.cwd
+      ? expandEnvironmentVariables(request.cwd, environment)
+      : undefined;
+  } catch (error) {
+    return Promise.reject(error);
+  }
   const startedAt = Date.now();
   return new Promise((resolve) => {
     const stdoutChunks = [];
@@ -24,11 +63,11 @@ export function runProgram(request) {
     const stdoutState = { bytes: 0 };
     const stderrState = { bytes: 0 };
     let settled = false;
-    const child = spawn(request.program.trim(), args, {
-      cwd: request.cwd,
+    const child = spawn(program, expandedArgs, {
+      cwd,
       shell: request.mode === "shell",
       windowsHide: true,
-      env: { ...process.env, ...request.environment },
+      env: environment,
     });
 
     const finish = (result) => {

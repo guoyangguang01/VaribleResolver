@@ -14,7 +14,7 @@ import {
   type OutputExtraction,
 } from "../../lib/launcher";
 import { locatorLabel } from "../../lib/programWorkspace";
-import { AddIcon, FolderIcon } from "./ProgramIcons";
+import { AddIcon, FolderIcon, ReferenceIcon } from "./ProgramIcons";
 
 export interface ParameterFileGroup {
   path: string;
@@ -413,7 +413,11 @@ export function ParameterSidebar({
                                         binding.direction === "input"
                                           ? "输入"
                                           : "输出"
-                                      }参数 ${binding.name}`}
+                                      }参数 ${binding.name}${
+                                        binding.inputReference
+                                          ? "，引用参数"
+                                          : ""
+                                      }`}
                                       aria-selected={key === selectedParameterKey}
                                       className={`runner-binding is-${binding.direction}${
                                         parameterOutput?.error ? " has-error" : ""
@@ -439,13 +443,27 @@ export function ParameterSidebar({
                                         binding.scope === "free"
                                           ? FREE_PARAMETER_SCOPE
                                           : binding.filePath
-                                      }\n${locatorLabel(binding)}`}
+                                      }\n${locatorLabel(binding)}${
+                                        binding.inputReference
+                                          ? `\n引用：${binding.inputReference}`
+                                          : ""
+                                      }`}
                                       type="button"
                                     >
                                       <span className="tree-parameter-glyph">
                                         ↳
                                       </span>
-                                      <span>{binding.name}</span>
+                                      <span className="runner-parameter-name">
+                                        {binding.name}
+                                      </span>
+                                      {binding.inputReference && (
+                                        <span
+                                          className="runner-parameter-reference"
+                                          title={`引用 ${binding.inputReference}`}
+                                        >
+                                          <ReferenceIcon />
+                                        </span>
+                                      )}
                                     </button>
                                   );
                                 })}

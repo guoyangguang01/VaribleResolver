@@ -1,6 +1,6 @@
 Result	Max	Min	Unit
-Equivalent Stress	3.31996114e+08	3.80313897e+01	Pa
-Equivalent Stress fati	3.31996114e+08	2.09913080e+07	Pa
-Equivalent Stress daoxiangjian	4.99731394e+07	3.39935984e+07	Pa
-Equivalent Stress fagan	1.13946751e+08	6.04236062e+07	Pa
-Equivalent Stress zhaban	1.13912566e+08	7.83454501e+07	Pa
+Equivalent Stress	9.10594808e+08	9.92493181e+03	Pa
+Equivalent Stress fati	9.10594808e+08	9.92493181e+03	Pa
+Equivalent Stress daoxiangjian	1.78605483e+08	6.00558862e+06	Pa
+Equivalent Stress fagan	3.26564573e+08	1.59718061e+04	Pa
+Equivalent Stress zhaban	3.50041468e+08	9.36395984e+06	Pa

@@ -1,6 +1,6 @@
 {
   "schema": "program-studio-folder-project",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "name": "fa1 标准执行示例",
   "createdAt": "2026-01-01T00:00:00.000Z",
   "updatedAt": "2026-01-01T00:00:00.000Z",
@@ -12,50 +12,100 @@
       "path": "files/CFX1.ccl",
       "roles": [
         "input"
-      ],
-      "relativePath": "files/CFX1.ccl"
+      ]
     },
     {
       "path": "files/Post.cse",
       "roles": [
         "input"
-      ],
-      "relativePath": "files/Post.cse"
+      ]
     },
     {
       "path": "files/Mechanical_Thermal.py",
       "roles": [
         "input"
-      ],
-      "relativePath": "files/Mechanical_Thermal.py"
+      ]
     },
     {
       "path": "files/Mechanical_Structural-2019.py",
       "roles": [
         "input"
-      ],
-      "relativePath": "files/Mechanical_Structural-2019.py"
+      ]
     },
     {
       "path": "files/workbench.wbjn",
       "roles": [
-        "input"
-      ],
-      "relativePath": "files/workbench.wbjn"
+        "input",
+        "program-entry"
+      ]
     },
     {
       "path": "files/Stress_Envelope_Summary.txt",
       "roles": [
         "output-reference"
-      ],
-      "relativePath": "files/Stress_Envelope_Summary.txt"
+      ]
     },
     {
-      "path": "files/ResultManifest.txt",
+      "path": "files/CFX_setup_0.ccl",
       "roles": [
-        "output-reference"
-      ],
-      "relativePath": "files/ResultManifest.txt"
+        "support"
+      ]
+    },
+    {
+      "path": "files/jiaobencfx_coord.ccl",
+      "roles": [
+        "support"
+      ]
+    },
+    {
+      "path": "files/31acc.txt",
+      "roles": [
+        "resource"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "name": "CFX1[In]",
+      "order": 1,
+      "files": [
+        "files/CFX1.ccl"
+      ]
+    },
+    {
+      "name": "Post[In]",
+      "order": 2,
+      "files": [
+        "files/Post.cse"
+      ]
+    },
+    {
+      "name": "Mechanical_Thermal[In]",
+      "order": 3,
+      "files": [
+        "files/Mechanical_Thermal.py"
+      ]
+    },
+    {
+      "name": "workbench[In]",
+      "order": 4,
+      "files": [
+        "files/workbench.wbjn"
+      ]
+    },
+    {
+      "name": "Mechanical_Structural-2019[In]",
+      "order": 5,
+      "files": [
+        "files/Mechanical_Structural-2019.py"
+      ]
+    },
+    {
+      "name": "Stress_Envelope_Summary[Out]",
+      "order": 6,
+      "files": [
+        "files/Stress_Envelope_Summary.txt"
+      ]
     }
   ]
 }

@@ -4,6 +4,21 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { createProjectRunWorkspace } from "../electron/runWorkspace.js";
+import { expandEnvironmentVariables } from "../electron/processRunner.js";
+
+test("expands environment variables in runtime commands", () => {
+  assert.equal(
+    expandEnvironmentVariables(
+      "%AWP_ROOT195%/Framework/bin/Win64/RunWB2.exe",
+      { AWP_ROOT195: "D:\\ANSYS" },
+    ),
+    "D:\\ANSYS/Framework/bin/Win64/RunWB2.exe",
+  );
+  assert.throws(
+    () => expandEnvironmentVariables("%MISSING_ROOT%/runner.exe", {}),
+    /环境变量未设置：MISSING_ROOT/,
+  );
+});
 
 async function writeJson(filePath, value) {
   await fs.writeFile(filePath, JSON.stringify(value, null, 2), "utf8");
@@ -26,18 +41,22 @@ test("creates an isolated run workspace without stale reference outputs", async 
       "maximum = 10\n",
       "utf8",
     );
+    await fs.writeFile(
+      path.join(project, "files", "macro.txt"),
+      "#UCW_PRJ_DIR#\\files\\report.txt\n",
+      "utf8",
+    );
     await writeJson(path.join(project, "project.json"), {
       schema: "program-studio-folder-project",
-      schemaVersion: 4,
+      schemaVersion: 5,
+      modules: [],
       files: [
         {
-          path: "C:\\Cases\\input.ccl",
-          relativePath: "files/input.ccl",
+          path: "files/input.ccl",
           roles: ["input"],
         },
         {
-          path: "C:\\Cases\\report.txt",
-          relativePath: "files/report.txt",
+          path: "files/report.txt",
           roles: ["output-reference"],
         },
       ],
@@ -56,7 +75,14 @@ test("creates an isolated run workspace without stale reference outputs", async 
     });
 
     const run = await createProjectRunWorkspace(project);
-    assert.match(run.runId, /^run-/);
+    assert.equal(run.path, path.join(project, "run"));
+    assert.equal(
+      await fs.readFile(
+        path.join(run.path, "files", "macro.txt"),
+        "utf8",
+      ),
+      `${run.path}\\files\\report.txt\n`,
+    );
     assert.equal(
       await fs.readFile(
         path.join(run.path, "files", "input.ccl"),
@@ -75,6 +101,18 @@ test("creates an isolated run workspace without stale reference outputs", async 
       ),
       "maximum = 10\n",
     );
+    await fs.writeFile(
+      path.join(run.path, "files", "stale.txt"),
+      "stale\n",
+      "utf8",
+    );
+    const rerun = await createProjectRunWorkspace(project);
+    assert.equal(rerun.path, run.path);
+    await assert.rejects(
+      () => fs.access(path.join(rerun.path, "files", "stale.txt")),
+      /ENOENT/,
+    );
+    await assert.rejects(() => fs.access(path.join(project, "runs")), /ENOENT/);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
@@ -94,11 +132,11 @@ test("keeps a seeded output when the output contract requests a reference copy",
     );
     await writeJson(path.join(project, "project.json"), {
       schema: "program-studio-folder-project",
-      schemaVersion: 4,
+      schemaVersion: 5,
+      modules: [],
       files: [
         {
-          path: "C:\\Cases\\report.txt",
-          relativePath: "files/report.txt",
+          path: "files/report.txt",
           roles: ["output-reference"],
         },
       ],

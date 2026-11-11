@@ -79,32 +79,50 @@ test("project CLI runs in an isolated workspace and extracts a new output", asyn
     );
     await writeJson(path.join(project, "project.json"), {
       schema: "program-studio-folder-project",
-      schemaVersion: 4,
+      schemaVersion: 5,
       name: "CLI 运行工作区测试",
       createdAt: "2026-11-09T00:00:00.000Z",
       updatedAt: "2026-11-09T00:00:00.000Z",
       launchFile: "launch.json",
       parameterFile: "parameters.json",
       outputFile: "outputs.json",
+      modules: [
+        {
+          name: "input.ccl",
+          files: ["files/input.ccl"],
+          order: 1,
+        },
+        {
+          name: "alias.ccl",
+          files: ["files/alias.ccl"],
+          order: 2,
+        },
+        {
+          name: "report.txt",
+          files: ["files/report.txt"],
+          order: 3,
+        },
+        {
+          name: "runner.cjs",
+          files: ["files/runner.cjs"],
+          order: 4,
+        },
+      ],
       files: [
         {
-          path: "C:\\Cases\\input.ccl",
-          relativePath: "files/input.ccl",
+          path: "files/input.ccl",
           roles: ["input"],
         },
         {
-          path: "C:\\Cases\\alias.ccl",
-          relativePath: "files/alias.ccl",
+          path: "files/alias.ccl",
           roles: ["input"],
         },
         {
-          path: "C:\\Cases\\report.txt",
-          relativePath: "files/report.txt",
+          path: "files/report.txt",
           roles: ["output-reference"],
         },
         {
-          path: "C:\\Cases\\runner.cjs",
-          relativePath: "files/runner.cjs",
+          path: "files/runner.cjs",
           roles: ["program-entry"],
         },
       ],
@@ -212,7 +230,7 @@ test("project CLI runs in an isolated workspace and extracts a new output", asyn
     const report = JSON.parse(stdout);
     assert.equal(report.execution.inputs[0].effectiveValue, "20");
     assert.equal(report.execution.outputs[0].value, "25");
-    assert.match(report.project.runPath, /[\\/]runs[\\/]run-/);
+    assert.equal(report.project.runPath, path.join(project, "run"));
     assert.equal(
       await fs.readFile(
         path.join(project, "files", "input.ccl"),

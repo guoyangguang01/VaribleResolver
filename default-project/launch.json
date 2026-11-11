@@ -1,6 +1,6 @@
 {
   "mode": "direct",
-  "program": "C:\\Program Files\\ANSYS Inc\\v195\\Framework\\bin\\Win64\\RunWB2.exe",
-  "arguments": "-B -R \"workbench.wbjn\"",
-  "workingDirectory": "files"
+  "program": "%AWP_ROOT195%/Framework/bin/Win64/RunWB2.exe",
+  "arguments": "-X -R \"#UCW_PRJ_DIR#/files/workbench.wbjn\"",
+  "workingDirectory": "#UCW_PRJ_DIR#"
 }

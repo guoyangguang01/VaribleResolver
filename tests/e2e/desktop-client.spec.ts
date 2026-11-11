@@ -16,7 +16,7 @@ test("desktop client exposes path file IO and local program execution", async ()
     path.join(projectDirectory, "project.json"),
     JSON.stringify({
       schema: "program-studio-folder-project",
-      schemaVersion: 4,
+      schemaVersion: 5,
     }),
     "utf8",
   );
@@ -42,13 +42,11 @@ test("desktop client exposes path file IO and local program execution", async ()
         setDirty: typeof window.programStudio?.setDirty,
         setTheme: typeof window.programStudio?.setTheme,
         saveProject: typeof window.programStudio?.saveProject,
-        updateFiles: typeof window.programStudio?.updateFiles,
       })),
     ).toEqual({
       setDirty: "function",
       setTheme: "function",
       saveProject: "function",
-      updateFiles: "function",
     });
 
     const roundTrip = await page.evaluate(async (filePath) => {
@@ -60,19 +58,6 @@ test("desktop client exposes path file IO and local program execution", async ()
       return api.readFiles([filePath]);
     }, tempFile);
     expect(roundTrip[0]?.content).toContain("STATUS: OK");
-
-    const updated = await page.evaluate(async (filePath) => {
-      const api = window.programStudio;
-      if (!api) throw new Error("Desktop API unavailable");
-      await api.updateFiles([
-        { path: filePath, content: "VALUE: 43\nSTATUS: UPDATED\n" },
-      ]);
-      return api.readFiles([filePath]);
-    }, tempFile);
-    expect(updated[0]?.content).toContain("STATUS: UPDATED");
-    expect(await fs.readFile(tempFile, "utf8")).toBe(
-      "VALUE: 43\r\nSTATUS: UPDATED\r\n",
-    );
 
     const missingPath = path.join(
       os.tmpdir(),
@@ -114,7 +99,7 @@ test("desktop client exposes path file IO and local program execution", async ()
             folderName: "Desktop Save",
             manifest: {
               schema: "program-studio-folder-project",
-              schemaVersion: 4,
+              schemaVersion: 5,
               name: "Desktop Save",
               createdAt: "2026-11-05T00:00:00.000Z",
               updatedAt: "2026-11-05T00:00:00.000Z",
@@ -123,11 +108,11 @@ test("desktop client exposes path file IO and local program execution", async ()
               outputFile: "outputs.json",
               files: [
                 {
-                  path: "D:\\cases\\data.txt",
-                  relativePath: "files/001-data.txt",
+                  path: "files/001-data.txt",
                   roles: ["support"],
                 },
               ],
+              modules: [],
             },
             launch: {
               mode: "direct",
@@ -139,7 +124,7 @@ test("desktop client exposes path file IO and local program execution", async ()
             outputs: { outputs: [] },
             files: [
               {
-                relativePath: "files/001-data.txt",
+                path: "files/001-data.txt",
                 content: "VALUE: 42\n",
               },
             ],
@@ -158,8 +143,7 @@ test("desktop client exposes path file IO and local program execution", async ()
       },
       projectDirectory,
     );
-    expect(runWorkspace.runId).toMatch(/^run-/);
-    expect(runWorkspace.path).toContain(path.join("runs", runWorkspace.runId));
+    expect(runWorkspace.path).toBe(path.join(projectDirectory, "run"));
     expect(
       await fs.readFile(
         path.join(projectDirectory, "files", "001-data.txt"),

@@ -25,8 +25,10 @@ export function projectRevision(snapshot: ProjectSnapshot): string {
     outputs: snapshot.outputs,
     files: snapshot.files.map((file) => ({
       path: file.path,
+      roles: file.roles,
       content: file.content,
     })),
+    modules: snapshot.modules,
     bindings: snapshot.bindings.map(
       ({ value: _runtimeValue, ...binding }) => binding,
     ),

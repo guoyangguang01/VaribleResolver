@@ -96,6 +96,27 @@ export class ProjectExecutionError extends Error {
   }
 }
 
+function overrideKey(override: ProjectInputOverride): string {
+  const fileName = parameterFileName(override.fileName)
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase();
+  return `${fileName}.${override.parameterName.trim()}`;
+}
+
+export function mergeInputOverrides(
+  defaultOverrides: ProjectInputOverride[],
+  runtimeOverrides: ProjectInputOverride[],
+): ProjectInputOverride[] {
+  const merged = new Map<string, ProjectInputOverride>();
+  for (const override of defaultOverrides) {
+    merged.set(overrideKey(override), override);
+  }
+  for (const override of runtimeOverrides) {
+    merged.set(overrideKey(override), override);
+  }
+  return [...merged.values()];
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "未知错误";
 }

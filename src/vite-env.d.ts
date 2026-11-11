@@ -25,9 +25,6 @@ interface ProgramStudioApi {
   writeFiles: (
     files: Array<{ path: string; content: string }>,
   ) => Promise<string[]>;
-  updateFiles: (
-    files: Array<{ path: string; content: string }>,
-  ) => Promise<string[]>;
   saveProject: (
     payload: unknown,
     options?: {
@@ -39,7 +36,7 @@ interface ProgramStudioApi {
   openDefaultProject: () => Promise<unknown>;
   createRunWorkspace: (
     projectPath: string,
-  ) => Promise<{ runId: string; path: string }>;
+  ) => Promise<{ path: string }>;
   runProgram: (request: {
     mode?: "direct" | "shell";
     program: string;

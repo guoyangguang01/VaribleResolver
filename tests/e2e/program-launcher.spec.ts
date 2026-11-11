@@ -84,13 +84,13 @@ test.describe("default fa1 project", () => {
     await expect(runner.locator(".runner-project-path")).toContainText(
       path.join(process.cwd(), "default-project"),
     );
-    await expect(runner.locator(".runner-binding")).toHaveCount(152);
+    await expect(runner.locator(".runner-binding")).toHaveCount(153);
     await expect(runner.locator(".runner-notice")).toContainText(
       "已打开默认测试工程",
     );
 
     await runner.getByRole("tab", { name: "资源" }).click();
-    await expect(runner.locator(".runner-file-item")).toHaveCount(7);
+    await expect(runner.locator(".runner-file-item")).toHaveCount(9);
   });
 });
 
@@ -114,7 +114,7 @@ test("creates input and output bindings from the editor context menu", async ({
   await fileButton.click();
   await expect(
     runner.locator(".runner-editor-heading strong"),
-  ).toHaveText("result.txt");
+  ).toHaveText("files/result.txt");
 
   await selectInRunner(page, "initial");
   await addParameterFromContextMenu(page, "输入");
@@ -267,14 +267,20 @@ test("loads the fa1 standard example with path files and row-column parameters",
   await runner.locator(".runner-load-example").click();
 
   await runner.getByRole("tab", { name: "资源" }).click();
-  await expect(runner.locator(".runner-file-item")).toHaveCount(7);
+  await expect(runner.locator(".runner-file-item")).toHaveCount(9);
   await runner
     .locator(".runner-sidebar-tabs")
     .getByRole("tab", { name: /^参数/ })
     .click();
-  await expect(runner.locator(".runner-binding")).toHaveCount(152);
-  await expect(runner.locator(".runner-binding.is-input")).toHaveCount(138);
+  await expect(runner.locator(".runner-binding")).toHaveCount(153);
+  await expect(runner.locator(".runner-binding.is-input")).toHaveCount(139);
   await expect(runner.locator(".runner-binding.is-output")).toHaveCount(14);
+  await expect(runner.locator(".runner-parameter-reference")).toHaveCount(24);
+  await expect(
+    runner.getByRole("treeitem", {
+      name: "输入参数 阀体材料，引用参数",
+    }),
+  ).toBeVisible();
   await expect(
     runner.locator(".runner-files .runner-parameter-tree-body"),
   ).toBeVisible();
@@ -288,14 +294,9 @@ test("loads the fa1 standard example with path files and row-column parameters",
       .first(),
   ).toBeVisible();
   await runner.getByRole("tab", { name: "资源" }).click();
-  const exampleRoot = path.join(
-    process.cwd(),
-    "default-project",
-    "files",
-  );
   await expect(
     runner.locator(".runner-file-select").filter({
-      hasText: path.join(exampleRoot, "Stress_Envelope_Summary.txt"),
+      hasText: "files/Stress_Envelope_Summary.txt",
     }),
   ).toBeVisible();
   await runner
@@ -310,19 +311,19 @@ test("loads the fa1 standard example with path files and row-column parameters",
       .filter({ hasText: "程序路径" })
       .locator("input"),
   ).toHaveValue(
-    "C:\\Program Files\\ANSYS Inc\\v195\\Framework\\bin\\Win64\\RunWB2.exe",
+    "%AWP_ROOT195%/Framework/bin/Win64/RunWB2.exe",
   );
   await expect(
     runner
       .locator(".runner-field")
       .filter({ hasText: "工作目录" })
       .locator("input"),
-  ).toHaveValue(exampleRoot);
+  ).toHaveValue("#UCW_PRJ_DIR#");
   await expect(
     runner.locator(".runner-inspector-scroll textarea"),
-  ).toHaveValue(`-B -R "${path.join(exampleRoot, "workbench.wbjn")}"`);
+  ).toHaveValue('-X -R "#UCW_PRJ_DIR#/files/workbench.wbjn"');
   await expect(runner.locator(".runner-notice")).toContainText(
-    "7 个路径文件，152 个标准参数",
+    "9 个路径文件，153 个标准参数",
   );
 
   await runner
@@ -332,8 +333,10 @@ test("loads the fa1 standard example with path files and row-column parameters",
     .click();
   await runner.getByRole("tab", { name: "参数属性" }).click();
   const freeLocatorInfo = runner.getByLabel("参数定位信息");
-  await expect(freeLocatorInfo).toContainText("分段");
-  await expect(freeLocatorInfo).toContainText("分隔符");
+  await expect(freeLocatorInfo).toContainText("不关联文件");
+  await expect(runner.getByLabel("参数默认值")).toHaveValue(
+    "#UCW_PRJ_DIR#\\files\\V1.png",
+  );
 
   await runner
     .locator(".runner-binding.is-output")
@@ -486,17 +489,23 @@ test("loads and saves a folder project with files and launch configuration", asy
   );
   await writeJson(path.join(projectDirectory, "project.json"), {
     schema: "program-studio-folder-project",
-    schemaVersion: 4,
+    schemaVersion: 5,
     name: "工程 A",
     createdAt: "2026-11-05T00:00:00.000Z",
     updatedAt: "2026-11-05T00:00:00.000Z",
     launchFile: "launch.json",
     parameterFile: "parameters.json",
     outputFile: "outputs.json",
+    modules: [
+      {
+        name: "001-data",
+        files: ["files/001-data.txt"],
+        order: 1,
+      },
+    ],
     files: [
       {
-        path: sourceFile,
-        relativePath: "files/001-data.txt",
+        path: "files/001-data.txt",
         roles: ["input"],
       },
     ],
@@ -649,7 +658,7 @@ test("loads and saves a folder project with files and launch configuration", asy
       "utf8",
     ),
   ).toContain("VALUE: 43");
-  expect(await fs.readFile(sourceFile, "utf8")).toBe("VALUE: 43\n");
+  expect(await fs.readFile(sourceFile, "utf8")).toBe("VALUE: 42\n");
 
   await runner
     .locator(".runner-editor-shell .codemirror-host")
@@ -666,7 +675,7 @@ test("loads and saves a folder project with files and launch configuration", asy
     });
   await runner.getByRole("button", { name: "另存为" }).click();
   await expect(runner.locator(".runner-notice")).toContainText("工程已另存为");
-  expect(await fs.readFile(sourceFile, "utf8")).toBe("VALUE: 43\n");
+  expect(await fs.readFile(sourceFile, "utf8")).toBe("VALUE: 42\n");
 });
 
 test("switches themes and persists the preference", async ({ page }) => {
@@ -695,7 +704,8 @@ test("confirms before replacing a project with unsaved changes", async ({
   await fs.mkdir(projectDirectory);
   await writeJson(path.join(projectDirectory, "project.json"), {
     schema: "program-studio-folder-project",
-    schemaVersion: 4,
+    schemaVersion: 5,
+    modules: [],
     name: "未保存测试",
     createdAt: "2026-11-05T00:00:00.000Z",
     updatedAt: "2026-11-05T00:00:00.000Z",

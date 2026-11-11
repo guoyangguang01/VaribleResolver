@@ -15,7 +15,7 @@ import { createProjectRunWorkspace } from "./runWorkspace.js";
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 const MAX_FILE_BYTES = 32 * 1024 * 1024;
-const PROJECT_SCHEMA_VERSION = 4;
+const PROJECT_SCHEMA_VERSION = 5;
 
 let mainWindow = null;
 let hasUnsavedChanges = false;
@@ -163,63 +163,6 @@ ipcMain.handle("client:write-files", async (_event, files) => {
   return written;
 });
 
-ipcMain.handle("client:update-files", async (_event, files) => {
-  if (!Array.isArray(files)) throw new Error("文件列表无效。");
-  const targets = [];
-  for (const file of files) {
-    if (
-      !file ||
-      typeof file.path !== "string" ||
-      typeof file.content !== "string"
-    ) {
-      throw new Error("原文件更新参数无效。");
-    }
-    if (!path.isAbsolute(file.path)) {
-      throw new Error(`原文件必须使用绝对路径：${file.path}`);
-    }
-    const absolutePath = path.resolve(file.path);
-    if (Buffer.byteLength(file.content, "utf8") > MAX_FILE_BYTES) {
-      throw new Error(`文件超过 32 MB：${absolutePath}`);
-    }
-    let stat;
-    try {
-      stat = await fs.stat(absolutePath);
-    } catch {
-      throw new Error(`原文件不存在：${absolutePath}`);
-    }
-    if (!stat.isFile()) throw new Error(`不是文件：${absolutePath}`);
-    if (stat.size > MAX_FILE_BYTES) {
-      throw new Error(`文件超过 32 MB：${absolutePath}`);
-    }
-    targets.push({
-      absolutePath,
-      content: file.content,
-      original: await fs.readFile(absolutePath),
-    });
-  }
-
-  const written = [];
-  for (const target of targets) {
-    const originalText = target.original.toString("utf8");
-    const lineEnding = /\r\n|\r|\n/.exec(originalText)?.[0] ?? "\n";
-    const normalizedContent = target.content.replace(/\r\n?/g, "\n");
-    let content =
-      lineEnding === "\n"
-        ? normalizedContent
-        : normalizedContent.replace(/\n/g, lineEnding);
-    const hasUtf8Bom =
-      target.original[0] === 0xef &&
-      target.original[1] === 0xbb &&
-      target.original[2] === 0xbf;
-    if (hasUtf8Bom && !content.startsWith("\ufeff")) {
-      content = `\ufeff${content}`;
-    }
-    await fs.writeFile(target.absolutePath, content, "utf8");
-    written.push(target.absolutePath);
-  }
-  return written;
-});
-
 ipcMain.handle("client:save-project", async (_event, payload, options) => {
   if (
     !payload ||
@@ -255,7 +198,8 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
     }
     if (
       existingManifest?.schema !== "program-studio-folder-project" ||
-      existingManifest?.schemaVersion !== PROJECT_SCHEMA_VERSION
+      (existingManifest?.schemaVersion !== PROJECT_SCHEMA_VERSION &&
+        existingManifest?.schemaVersion !== 4)
     ) {
       throw new Error(`工程版本不受支持：${projectDirectory}`);
     }
@@ -286,6 +230,10 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
     }
   }
 
+  await fs.rm(path.join(projectDirectory, "files"), {
+    recursive: true,
+    force: true,
+  });
   await fs.mkdir(path.join(projectDirectory, "files"), { recursive: true });
   await fs.writeFile(
     path.join(projectDirectory, "project.json"),
@@ -310,16 +258,16 @@ ipcMain.handle("client:save-project", async (_event, payload, options) => {
   for (const file of payload.files) {
     if (
       !file ||
-      typeof file.relativePath !== "string" ||
+      typeof file.path !== "string" ||
       typeof file.content !== "string"
     ) {
       throw new Error("工程封装文件参数无效。");
     }
-    const targetPath = path.resolve(projectDirectory, file.relativePath);
+    const targetPath = path.resolve(projectDirectory, file.path);
     assertInsideRoot(
       targetPath,
       projectDirectory,
-      `工程文件路径越界：${file.relativePath}`,
+      `工程文件路径越界：${file.path}`,
     );
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, file.content, "utf8");
@@ -348,17 +296,19 @@ async function readProjectDirectory(projectDirectory) {
   }
   const files = await Promise.all(
     manifest.files.map(async (entry) => {
-      if (!entry || typeof entry.relativePath !== "string") {
+      const storedPath =
+        manifest.schemaVersion === 4 ? entry?.relativePath : entry?.path;
+      if (!entry || typeof storedPath !== "string") {
         throw new Error("工程文件清单条目无效。");
       }
-      const filePath = path.resolve(projectDirectory, entry.relativePath);
+      const filePath = path.resolve(projectDirectory, storedPath);
       assertInsideRoot(
         filePath,
         projectDirectory,
-        `工程文件路径越界：${entry.relativePath}`,
+        `工程文件路径越界：${storedPath}`,
       );
       return {
-        relativePath: entry.relativePath,
+        path: storedPath,
         content: (await fs.readFile(filePath)).toString("utf8"),
       };
     }),

@@ -11,11 +11,6 @@ function resolveInside(root, relativePath) {
   );
 }
 
-function runIdCandidate() {
-  const timestamp = new Date().toISOString().replace(/\D/g, "").slice(0, 17);
-  return `run-${timestamp}`;
-}
-
 async function readJsonIfPresent(filePath) {
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
@@ -27,39 +22,52 @@ async function readJsonIfPresent(filePath) {
   }
 }
 
-async function reserveRunDirectory(projectDirectory) {
-  const runsRoot = path.join(projectDirectory, "runs");
-  await fs.mkdir(runsRoot, { recursive: true });
-  const base = runIdCandidate();
-  for (let suffix = 0; suffix < 1000; suffix += 1) {
-    const runId = suffix === 0 ? base : `${base}-${suffix + 1}`;
-    const runDirectory = path.join(runsRoot, runId);
-    try {
-      await fs.mkdir(runDirectory);
-      return { runId, runDirectory };
-    } catch (error) {
-      if (error && typeof error === "object" && error.code === "EEXIST") {
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw new Error("无法创建唯一的运行工作区。");
-}
-
 function fileRolesByPath(manifest) {
   const roles = new Map();
   if (!manifest || !Array.isArray(manifest.files)) return roles;
   for (const file of manifest.files) {
     if (
       file &&
-      typeof file.relativePath === "string" &&
+      typeof file.path === "string" &&
       Array.isArray(file.roles)
     ) {
-      roles.set(path.normalize(file.relativePath), new Set(file.roles));
+      roles.set(path.normalize(file.path), new Set(file.roles));
     }
   }
   return roles;
+}
+
+async function expandProjectDirectoryMacros(directory, projectDirectory) {
+  let entries;
+  try {
+    entries = await fs.readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "ENOENT") {
+      return;
+    }
+    throw error;
+  }
+  const nativeProjectPath = projectDirectory.includes("\\")
+    ? projectDirectory.replace(/\//g, "\\")
+    : projectDirectory.replace(/\\/g, "/");
+  for (const entry of entries) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      await expandProjectDirectoryMacros(target, projectDirectory);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const content = await fs.readFile(target);
+    if (content.includes(0)) continue;
+    const text = content.toString("utf8");
+    const expanded = text.replaceAll(
+      "#UCW_PRJ_DIR#",
+      nativeProjectPath,
+    );
+    if (expanded !== text) {
+      await fs.writeFile(target, expanded, "utf8");
+    }
+  }
 }
 
 async function applyOutputSeedPolicy({
@@ -93,36 +101,26 @@ async function applyOutputSeedPolicy({
 
 export async function createProjectRunWorkspace(
   projectDirectory,
-  options = {},
 ) {
   const root = path.resolve(projectDirectory);
   await fs.access(path.join(root, "project.json"));
-  const runsRoot = path.join(root, "runs");
-  const { runId, runDirectory } =
-    options.runId === undefined
-      ? await reserveRunDirectory(root)
-      : (() => {
-          const requested = String(options.runId).trim();
-          if (!requested) throw new Error("运行 ID 不能为空。");
-          return {
-            runId: requested,
-            runDirectory: path.join(runsRoot, requested),
-          };
-        })();
+  const runDirectory = path.join(root, "run");
+  await fs.rm(runDirectory, { recursive: true, force: true });
+  await fs.rm(path.join(root, "runs"), { recursive: true, force: true });
   await fs.mkdir(runDirectory, { recursive: true });
-  const entries = await fs.readdir(runDirectory);
-  if (entries.length > 0) {
-    throw new Error(`运行工作区已存在：${runDirectory}`);
-  }
 
   for (const entry of await fs.readdir(root, { withFileTypes: true })) {
-    if (entry.name === "runs") continue;
+    if (entry.name === "run" || entry.name === "runs") continue;
     await fs.cp(
       path.join(root, entry.name),
       path.join(runDirectory, entry.name),
       { recursive: entry.isDirectory() },
     );
   }
+  await expandProjectDirectoryMacros(
+    path.join(runDirectory, "files"),
+    runDirectory,
+  );
 
   const [manifest, outputs] = await Promise.all([
     readJsonIfPresent(path.join(root, "project.json")),
@@ -133,5 +131,5 @@ export async function createProjectRunWorkspace(
     outputs,
     manifest,
   });
-  return { runId, path: runDirectory };
+  return { path: runDirectory };
 }

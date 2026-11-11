@@ -45,7 +45,6 @@ import {
   type OutputExtraction,
 } from "../lib/launcher";
 import {
-  restoreSourceLineEndings,
   type SourceRange,
 } from "../lib/variables";
 import {
@@ -53,11 +52,13 @@ import {
   serializeProjectFolder,
   type ProjectFolderPayload,
   type ProjectLaunchMode,
+  type ProjectModule,
   type ProjectOutputSpec,
 } from "../lib/projectFolder";
 import type { ThemePreference } from "../lib/theme";
 import {
   executeProjectWithOverrides,
+  mergeInputOverrides,
   type EffectiveInputValue,
   type ProjectInputOverride,
 } from "../lib/projectExecution";
@@ -93,6 +94,7 @@ const EMPTY_PROJECT_REVISION = projectRevision({
   outputs: undefined,
   files: [],
   bindings: [],
+  modules: [],
 });
 type NoticeTone = "neutral" | "success" | "error";
 type PendingProjectAction = "new" | "open";
@@ -130,8 +132,7 @@ export function useProgramWorkspace() {
   const [projectName, setProjectName] = useState(EMPTY_PROJECT_NAME);
   const [projectPath, setProjectPath] = useState<string | null>(null);
   const [isBuiltInProject, setIsBuiltInProject] = useState(false);
-  const [projectRelativeFilePaths, setProjectRelativeFilePaths] =
-    useState<Record<string, string>>({});
+  const [projectModules, setProjectModules] = useState<ProjectModule[]>([]);
   const [projectCreatedAt, setProjectCreatedAt] = useState<string | null>(
     null,
   );
@@ -211,6 +212,7 @@ export function useProgramWorkspace() {
         outputs: projectOutputs,
         files,
         bindings,
+        modules: projectModules,
       }),
     [
       argumentText,
@@ -220,6 +222,7 @@ export function useProgramWorkspace() {
       projectOutputs,
       program,
       projectName,
+      projectModules,
       workingDirectory,
     ],
   );
@@ -334,7 +337,7 @@ export function useProgramWorkspace() {
         return false;
       }
       if (!query) return true;
-      return `${binding.name} ${
+      return `${binding.name} ${binding.module ?? ""} ${
         isFileBinding(binding)
           ? binding.filePath
           : FREE_PARAMETER_SCOPE
@@ -348,56 +351,48 @@ export function useProgramWorkspace() {
     });
   }, [bindings, parameterDirection, parameterQuery]);
   const parameterFileGroups = useMemo(() => {
-    const hasActiveFilter =
-      Boolean(parameterQuery.trim()) || parameterDirection !== "all";
-    const knownPaths = new Set(files.map((file) => file.path));
-    const groups = files.map((file) => {
-      const fileBindings = visibleBindings.filter(
-        (binding) =>
-          isFileBinding(binding) && binding.filePath === file.path,
-      );
-      return {
-        path: file.path,
-        name: file.name,
-        inputs: fileBindings.filter(
-          (binding) => binding.direction === "input",
-        ),
-        outputs: fileBindings.filter(
-          (binding) => binding.direction === "output",
-        ),
-      };
-    });
-    const missingBindings = visibleBindings.filter(
-      (binding) =>
-        isFileBinding(binding) && !knownPaths.has(binding.filePath),
-    );
-    if (missingBindings.length > 0) {
-      groups.push({
-        path: "__missing__",
-        name: "文件缺失",
-        inputs: missingBindings.filter(
-          (binding) => binding.direction === "input",
-        ),
-        outputs: missingBindings.filter(
-          (binding) => binding.direction === "output",
-        ),
-      });
-    }
-    const freeBindings = visibleBindings.filter(isFreeBinding);
-    if (freeBindings.length > 0) {
-      groups.push({
-        path: "__free__",
-        name: FREE_PARAMETER_SCOPE,
-        inputs: freeBindings,
+    const groups = new Map<
+      string,
+      {
+        path: string;
+        name: string;
+        order: number;
+        inputs: LaunchBinding[];
+        outputs: LaunchBinding[];
+      }
+    >();
+    for (const [index, module] of projectModules.entries()) {
+      groups.set(module.name, {
+        path: module.name,
+        name: module.name,
+        order: module.order || index + 1,
+        inputs: [],
         outputs: [],
       });
     }
-    return hasActiveFilter
-      ? groups.filter(
-          (group) => group.inputs.length > 0 || group.outputs.length > 0,
-        )
-      : groups;
-  }, [files, parameterDirection, parameterQuery, visibleBindings]);
+    for (const binding of visibleBindings) {
+      const name = isFreeBinding(binding)
+        ? FREE_PARAMETER_SCOPE
+        : binding.module?.trim() ||
+          parameterFileName(binding.filePath).replace(/\.[^.]+$/, "");
+      const group = groups.get(name) ?? {
+        path: name,
+        name,
+        order: groups.size + 1,
+        inputs: [],
+        outputs: [],
+      };
+      if (binding.direction === "input") group.inputs.push(binding);
+      else group.outputs.push(binding);
+      groups.set(name, group);
+    }
+    const result = [...groups.values()]
+      .filter(
+        (group) => group.inputs.length > 0 || group.outputs.length > 0,
+      )
+      .sort((left, right) => left.order - right.order);
+    return result;
+  }, [projectModules, visibleBindings]);
   const selectedParameter =
     visibleBindings.find(
       (binding) => parameterKey(binding) === selectedParameterId,
@@ -663,8 +658,6 @@ export function useProgramWorkspace() {
       return {
         ...file,
         content: replacement.content,
-        sourcePath: replacement.sourcePath,
-        sourceContent: replacement.sourceContent,
         lineEnding: replacement.lineEnding,
         size: replacement.size,
       };
@@ -700,27 +693,26 @@ export function useProgramWorkspace() {
     if (!fileList || fileList.length === 0) return;
     const imported: LaunchFile[] = [];
     const rejected: string[] = [];
+    const importedNames = new Set<string>();
 
     for (const file of Array.from(fileList)) {
+      const fileName = parameterFileName(file.name).trim();
+      const normalizedName = fileName.toLowerCase();
+      if (importedNames.has(normalizedName)) {
+        rejected.push(`${fileName}：同一批文件中名称重复`);
+        continue;
+      }
+      importedNames.add(normalizedName);
       if (file.size > MAX_FILE_SIZE) {
-        rejected.push(`${file.name}：超过 8 MB`);
+        rejected.push(`${fileName}：超过 8 MB`);
         continue;
       }
       const raw = await file.text();
       if (raw.includes("\u0000")) {
-        rejected.push(`${file.name}：包含二进制内容`);
+        rejected.push(`${fileName}：包含二进制内容`);
         continue;
       }
-      imported.push(
-        createLaunchFile(
-          (
-            file as File & {
-              webkitRelativePath?: string;
-            }
-          ).webkitRelativePath || file.name,
-          raw,
-        ),
-      );
+      imported.push(createLaunchFile(`files/${fileName}`, raw));
     }
 
     mergeImportedFiles(imported, rejected);
@@ -733,14 +725,22 @@ export function useProgramWorkspace() {
     }
     try {
       const selected = await desktopApi.selectFiles();
-      const imported = selected.map((file) =>
-        createLaunchFile(
-          file.path,
-          file.content,
-          file.path,
-        ),
-      );
-      mergeImportedFiles(imported, [], "已从本机载入");
+      const imported: LaunchFile[] = [];
+      const rejected: string[] = [];
+      const importedNames = new Set<string>();
+      for (const file of selected) {
+        const fileName = parameterFileName(file.name).trim();
+        const normalizedName = fileName.toLowerCase();
+        if (importedNames.has(normalizedName)) {
+          rejected.push(`${fileName}：同一批文件中名称重复`);
+          continue;
+        }
+        importedNames.add(normalizedName);
+        imported.push(
+          createLaunchFile(`files/${fileName}`, file.content),
+        );
+      }
+      mergeImportedFiles(imported, rejected, "已从本机载入");
     } catch (error) {
       setNotice({ tone: "error", text: errorMessage(error) });
     }
@@ -758,7 +758,7 @@ export function useProgramWorkspace() {
     setProjectName(EMPTY_PROJECT_NAME);
     setProjectPath(null);
     setIsBuiltInProject(false);
-    setProjectRelativeFilePaths({});
+    setProjectModules([]);
     setProjectCreatedAt(null);
     setActiveFilePath(null);
     setSelection({ start: 0, end: 0 });
@@ -816,6 +816,7 @@ export function useProgramWorkspace() {
     const loadedFiles = builtIn
       ? parsed.files.map((file) => ({
           path: file.path,
+          roles: file.roles,
           name: file.name,
           content: file.content,
           lineEnding: file.lineEnding,
@@ -825,14 +826,7 @@ export function useProgramWorkspace() {
     setProjectName(parsed.manifest.name);
     setProjectPath(folderPath);
     setIsBuiltInProject(builtIn);
-    setProjectRelativeFilePaths(
-      Object.fromEntries(
-        parsed.manifest.files.map((file, index) => [
-          parsed.files[index]?.path ?? file.path,
-          file.relativePath,
-        ]),
-      ),
-    );
+    setProjectModules(parsed.manifest.modules);
     setProjectCreatedAt(parsed.manifest.createdAt);
     setFiles(loadedFiles);
     setBindings(parsed.bindings);
@@ -867,6 +861,7 @@ export function useProgramWorkspace() {
         outputs: parsed.outputs,
         files: loadedFiles,
         bindings: parsed.bindings,
+        modules: parsed.manifest.modules,
       }),
     );
     const firstFile = loadedFiles[0];
@@ -932,7 +927,6 @@ export function useProgramWorkspace() {
 
   const saveProjectFolder = async (
     requestedMode: "auto" | "save" | "saveAs" = "auto",
-    options: { syncOriginalFiles?: boolean } = {},
   ) => {
     if (!desktopApi) {
       setNotice({
@@ -961,19 +955,9 @@ export function useProgramWorkspace() {
         outputs: projectOutputs,
         files,
         bindings,
+        modules: projectModules,
         createdAt: projectCreatedAt ?? undefined,
       });
-      const originalFileContents = new Map<string, string>();
-      if (options.syncOriginalFiles ?? requestedMode !== "saveAs") {
-        for (const file of files) {
-          if (
-            file.sourcePath &&
-            file.content !== file.sourceContent
-          ) {
-            originalFileContents.set(file.sourcePath, file.content);
-          }
-        }
-      }
       const saved = await desktopApi.saveProject(
         payload,
         mode === "save"
@@ -984,45 +968,33 @@ export function useProgramWorkspace() {
       setProjectName(payload.manifest.name);
       setProjectPath(saved.path);
       setIsBuiltInProject(false);
-      setProjectRelativeFilePaths(
-        Object.fromEntries(
-          payload.manifest.files.map((file) => [
-            file.path,
-            file.relativePath,
-          ]),
-        ),
-      );
+      setProjectModules(payload.manifest.modules);
       setProjectCreatedAt(payload.manifest.createdAt);
-      let savedFiles = files;
-      if (originalFileContents.size > 0) {
-        try {
-          await desktopApi.updateFiles(
-            [...originalFileContents].map(([path, content]) => ({
-              path,
-              content: restoreSourceLineEndings(
-                content,
-                files.find((file) => file.sourcePath === path)?.lineEnding ??
-                  "\n",
-              ),
-            })),
-          );
-          savedFiles = files.map((file) => {
-            const sourceContent = file.sourcePath
-              ? originalFileContents.get(file.sourcePath)
-              : undefined;
-            return sourceContent === undefined
-              ? file
-              : { ...file, sourceContent };
-          });
-          setFiles(savedFiles);
-        } catch (error) {
-          setNotice({
-            tone: "error",
-            text: `工程已保存，但更新原文件失败：${errorMessage(error)}`,
-          });
-          return null;
-        }
-      }
+      const pathByPreviousPath = new Map(
+        files.map((file, index) => [
+          file.path,
+          payload.manifest.files[index]?.path ?? file.path,
+        ]),
+      );
+      const savedFiles = files.map((file) => ({
+        ...file,
+        path: pathByPreviousPath.get(file.path) ?? file.path,
+        roles:
+          payload.manifest.files.find(
+            (entry) => entry.path === pathByPreviousPath.get(file.path),
+          )?.roles ?? file.roles,
+      }));
+      const savedBindings = bindings.map((binding) =>
+        isFileBinding(binding)
+          ? {
+              ...binding,
+              filePath:
+                pathByPreviousPath.get(binding.filePath) ?? binding.filePath,
+            }
+          : binding,
+      );
+      setFiles(savedFiles);
+      setBindings(savedBindings);
       setSavedRevision(
         projectRevision({
           name: payload.manifest.name,
@@ -1032,7 +1004,8 @@ export function useProgramWorkspace() {
           launchMode,
           outputs: payload.outputs.outputs,
           files: savedFiles,
-          bindings,
+          bindings: savedBindings,
+          modules: payload.manifest.modules,
         }),
       );
       setProjectOutputs(payload.outputs.outputs);
@@ -1040,9 +1013,7 @@ export function useProgramWorkspace() {
         tone: "success",
         text:
           mode === "save"
-            ? originalFileContents.size > 0
-              ? `工程已保存，已更新 ${originalFileContents.size} 个原文件：${saved.path}`
-              : `工程已保存：${saved.path}`
+            ? `工程已保存：${saved.path}`
             : `工程已另存为：${saved.path}`,
       });
       return { payload, path: saved.path };
@@ -1085,11 +1056,14 @@ export function useProgramWorkspace() {
   const removeFile = (filePath: string) => {
     const nextFiles = files.filter((file) => file.path !== filePath);
     setFiles(nextFiles);
-    setProjectRelativeFilePaths((current) => {
-      const next = { ...current };
-      delete next[filePath];
-      return next;
-    });
+    setProjectModules((current) =>
+      current
+        .map((module) => ({
+          ...module,
+          files: module.files.filter((path) => path !== filePath),
+        }))
+        .filter((module) => module.files.length > 0),
+    );
     setBindings((current) =>
       current.filter((binding) => binding.filePath !== filePath),
     );
@@ -1168,13 +1142,14 @@ export function useProgramWorkspace() {
     if (activeFilePath === previousPath) {
       setActiveFilePath(nextPath);
     }
-    setProjectRelativeFilePaths((current) => {
-      const relativePath = current[previousPath];
-      if (!relativePath) return current;
-      const next = { ...current, [nextPath]: relativePath };
-      delete next[previousPath];
-      return next;
-    });
+    setProjectModules((current) =>
+      current.map((module) => ({
+        ...module,
+        files: module.files.map((path) =>
+          path === previousPath ? nextPath : path,
+        ),
+      })),
+    );
     setNotice({ tone: "success", text: `文件路径已更新为 ${nextPath}` });
   };
 
@@ -1284,6 +1259,7 @@ export function useProgramWorkspace() {
       Pick<
         LaunchBinding,
         | "name"
+        | "module"
         | "parameterType"
         | "inputReference"
         | "outputReference"
@@ -1315,6 +1291,52 @@ export function useProgramWorkspace() {
     const nextKey = currentBinding
       ? parameterKey({ ...currentBinding, ...changes })
       : key;
+    if (
+      currentBinding &&
+      isFileBinding(currentBinding) &&
+      changes.module !== undefined
+    ) {
+      const previousModule = currentBinding.module?.trim();
+      const nextModule = changes.module.trim();
+      setProjectModules((current) => {
+        const updated = current
+          .map((module) =>
+            module.name === previousModule
+              ? {
+                  ...module,
+                  files: module.files.filter(
+                    (path) => path !== currentBinding.filePath,
+                  ),
+                }
+              : module,
+          )
+          .filter((module) => module.files.length > 0);
+        if (!nextModule) return updated;
+        const existing = updated.find(
+          (module) => module.name === nextModule,
+        );
+        if (existing) {
+          return updated.map((module) =>
+            module.name === nextModule
+              ? {
+                  ...module,
+                  files: module.files.includes(currentBinding.filePath)
+                    ? module.files
+                    : [...module.files, currentBinding.filePath],
+                }
+              : module,
+          );
+        }
+        return [
+          ...updated,
+          {
+            name: nextModule,
+            files: [currentBinding.filePath],
+            order: updated.length + 1,
+          },
+        ];
+      });
+    }
     setBindings((current) =>
       current.map((binding) => {
         if (parameterKey(binding) === key) {
@@ -1561,7 +1583,9 @@ export function useProgramWorkspace() {
     scrollParameterRow(candidateKey);
   };
 
-  const runProgram = async () => {
+  const runProgram = async (
+    runtimeOverrides: ProjectInputOverride[] = [],
+  ) => {
     if (!desktopApi) {
       setNotice({
         tone: "neutral",
@@ -1574,9 +1598,7 @@ export function useProgramWorkspace() {
       return;
     }
     try {
-      const saved = await saveProjectFolder("auto", {
-        syncOriginalFiles: false,
-      });
+      const saved = await saveProjectFolder("auto");
       if (!saved) return;
       const runWorkspace = await desktopApi.createRunWorkspace(saved.path);
       const runtimeProject = parseProjectFolder(
@@ -1586,7 +1608,7 @@ export function useProgramWorkspace() {
         },
         { mode: "run" },
       );
-      const overrides: ProjectInputOverride[] = runtimeProject.bindings
+      const defaultOverrides: ProjectInputOverride[] = runtimeProject.bindings
         .filter(
           (binding) =>
             binding.direction === "input" &&
@@ -1599,6 +1621,10 @@ export function useProgramWorkspace() {
           parameterName: binding.name,
           value: binding.defaultValue,
         }));
+      const overrides = mergeInputOverrides(
+        defaultOverrides,
+        runtimeOverrides,
+      );
 
       setLayout((current) =>
         current.dockCollapsed

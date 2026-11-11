@@ -1592,11 +1592,24 @@ body.is-resizing * {
   font-size: 12px;
 }
 
-.program-runner .runner-binding > span:last-child {
+.program-runner .runner-binding .runner-parameter-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.program-runner .runner-parameter-reference {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-left: auto;
+  color: var(--accent);
+}
+
+.program-runner .runner-parameter-reference .icon {
+  width: 13px;
+  height: 13px;
 }
 
 .program-runner .runner-binding.is-located,

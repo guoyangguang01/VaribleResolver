@@ -49,10 +49,18 @@ export {
 
 export type LaunchBindingDirection = "input" | "output";
 
+export type LaunchFileRole =
+  | "input"
+  | "output-reference"
+  | "support"
+  | "program-entry"
+  | "template"
+  | "generated"
+  | "resource";
+
 export interface LaunchFile {
   path: string;
-  sourcePath?: string;
-  sourceContent?: string;
+  roles?: LaunchFileRole[];
   name: string;
   content: string;
   lineEnding: SourceLineEnding;
@@ -89,6 +97,10 @@ function inputFileStem(filePath: string): string {
   const fileName = inputFilePath(filePath);
   const separator = fileName.lastIndexOf(".");
   return separator > 0 ? fileName.slice(0, separator) : fileName;
+}
+
+function fileModuleName(fileName: string): string {
+  return inputFileStem(fileName);
 }
 
 interface ParsedParameterReference {
@@ -291,6 +303,7 @@ export interface ParameterReferenceOptions {
 }
 
 function referenceFileLabel(binding: LaunchBinding): string {
+  if (binding.module?.trim()) return binding.module.trim();
   return isFreeBinding(binding)
     ? FREE_PARAMETER_SCOPE
     : inputFileStem(binding.filePath);
@@ -361,6 +374,7 @@ export function referenceOptionsForBinding(
 
 interface LaunchBindingBase {
   name: string;
+  module?: string;
   direction: LaunchBindingDirection;
   outputName?: string;
   inputReference?: string;
@@ -436,10 +450,8 @@ export interface OutputExtraction {
 export function createLaunchFile(
   path: string,
   content: string,
-  sourcePath?: string,
 ): LaunchFile {
   const normalizedPath = path.trim();
-  const normalizedSourcePath = sourcePath?.trim() || undefined;
   const slash = Math.max(
     normalizedPath.lastIndexOf("/"),
     normalizedPath.lastIndexOf("\\"),
@@ -448,12 +460,6 @@ export function createLaunchFile(
   const normalizedContent = normalizeSourceText(content);
   return {
     path: normalizedPath,
-    ...(normalizedSourcePath
-      ? {
-          sourcePath: normalizedSourcePath,
-          sourceContent: normalizedContent,
-        }
-      : {}),
     name: normalizedPath.slice(slash + 1) || normalizedPath,
     content: normalizedContent,
     lineEnding,
@@ -491,6 +497,7 @@ export function createBindingFromSelection(
   const value = resolved.value;
   return {
     name: name?.trim() || suggestedName.slice(0, 40) || "未命名参数",
+    module: fileModuleName(file.name),
     direction,
     filePath: file.path,
     locator,
@@ -533,6 +540,7 @@ export function createBindingFromLocator(
   const value = resolved.value;
   return {
     name,
+    module: fileModuleName(file.name),
     direction,
     filePath: file.path,
     locator,
@@ -564,6 +572,7 @@ export function createBindingFromRowColumn(
   const value = resolved.value;
   return {
     name,
+    module: fileModuleName(file.name),
     direction,
     filePath: file.path,
     locator,

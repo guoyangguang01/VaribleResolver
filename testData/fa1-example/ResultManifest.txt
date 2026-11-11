@@ -1,4 +1,0 @@
-CFX速度云图 = #UCW_PRJ_DIR#\result\V1.png
-CFX温度云图 = #UCW_PRJ_DIR#\result\T1.png
-CFX压力云图 = #UCW_PRJ_DIR#\result\P1.png
-变形云图 = #UCW_PRJ_DIR#\result\TotalDeform_Result.png

@@ -206,15 +206,16 @@ async function loadProject(
 
   const files = [];
   for (const entry of manifest.files) {
+    const storedPath =
+      manifest.schemaVersion === 4 ? entry?.relativePath : entry?.path;
     if (
       typeof entry !== "object" ||
       entry === null ||
-      !("relativePath" in entry) ||
-      typeof entry.relativePath !== "string"
+      typeof storedPath !== "string"
     ) {
       throw new Error("project.json 中存在无效文件条目。");
     }
-    const filePath = resolveInsideProject(root, entry.relativePath);
+    const filePath = resolveInsideProject(root, storedPath);
     let content: string;
     try {
       content = await fs.readFile(filePath, "utf8");
@@ -239,7 +240,7 @@ async function loadProject(
       }
     }
     files.push({
-      relativePath: entry.relativePath,
+      path: storedPath,
       content,
     });
   }
@@ -294,11 +295,10 @@ async function main() {
     JSON.stringify(
       {
         schema: "program-studio-project-run",
-        schemaVersion: 2,
+        schemaVersion: 3,
         project: {
           name: project.name,
           path: definition.path,
-          runId: runWorkspace.runId,
           runPath: runWorkspace.path,
         },
         overrides,

@@ -1,0 +1,14 @@
+LIBRARY: 
+  COORDINATE FRAME DEFINITIONS: 
+    &replace COORDINATE FRAME: Coord 1
+      Axis 3 Point = -0.000000 [m], 0.000000 [m], 1.000000 [m]
+      Coord Frame Type = Cartesian
+      Option = Axis Points
+      Origin Point = 0.0[m],0.0[m],0.0[m]
+      Plane 13 Point = 1.0[m],0.0[m],0.0[m]
+      Reference Coord Frame = Coord 0
+      Render Data Error = off
+      Visibility = on
+    END
+  END
+END

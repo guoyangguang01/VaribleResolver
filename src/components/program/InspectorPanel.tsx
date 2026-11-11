@@ -61,6 +61,7 @@ interface InspectorPanelProps {
       Pick<
         LaunchBinding,
         | "name"
+        | "module"
         | "parameterType"
         | "inputReference"
         | "outputReference"
@@ -154,6 +155,19 @@ function ParameterProperties({
               })
             }
             value={selectedParameter.name}
+          />
+        </label>
+        <label className="runner-property-field">
+          <span>模块</span>
+          <input
+            aria-label="参数模块"
+            onChange={(event) =>
+              updateBinding(parameterKey(selectedParameter), {
+                module: event.target.value.trim() || undefined,
+              })
+            }
+            placeholder="例如 CFX1[In]"
+            value={selectedParameter.module ?? ""}
           />
         </label>
         <label className="runner-property-field">
