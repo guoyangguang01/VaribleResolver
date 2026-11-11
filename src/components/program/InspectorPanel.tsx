@@ -10,12 +10,10 @@ import {
   parameterKey,
   referenceOptionsForBinding,
   type FileLaunchBinding,
-  type InputReferenceResolution,
   type LaunchBinding,
   type LaunchLocatorMode,
   type LaunchParameterType,
   type LocatorModeValues,
-  type OutputExtraction,
 } from "../../lib/launcher";
 import type { ProjectLaunchMode } from "../../lib/projectFolder";
 import {
@@ -37,15 +35,12 @@ interface InspectorPanelProps {
   argumentText: string;
   bindings: LaunchBinding[];
   editingBinding: FileLaunchBinding | null;
-  inputReferenceResolution: InputReferenceResolution;
   isCollapsed: boolean;
   launchMode: ProjectLaunchMode;
   locatorMode: LaunchLocatorMode;
   locatorModeValues: LocatorModeValues;
   program: string;
   selectedParameter: LaunchBinding | null;
-  selectedParameterOutput: OutputExtraction | null;
-  selectedParameterValueError: string | null;
   tab: InspectorTab;
   workingDirectory: string;
   onApplyLocator: () => void;
@@ -66,7 +61,6 @@ interface InspectorPanelProps {
       Pick<
         LaunchBinding,
         | "name"
-        | "value"
         | "parameterType"
         | "inputReference"
         | "outputReference"
@@ -108,10 +102,7 @@ function moveTabFocus(event: ReactKeyboardEvent<HTMLButtonElement>) {
 
 function ParameterProperties({
   bindings,
-  inputReferenceResolution,
   selectedParameter,
-  selectedParameterOutput,
-  selectedParameterValueError,
   onBeginEditLocator,
   onLocateBinding,
   onRemoveBinding,
@@ -119,10 +110,7 @@ function ParameterProperties({
 }: Pick<
   InspectorPanelProps,
   | "bindings"
-  | "inputReferenceResolution"
   | "selectedParameter"
-  | "selectedParameterOutput"
-  | "selectedParameterValueError"
   | "onBeginEditLocator"
   | "onLocateBinding"
   | "onRemoveBinding"
@@ -271,80 +259,6 @@ function ParameterProperties({
             value={selectedParameter.defaultValue}
           />
         </label>
-        <label className="runner-property-field is-wide">
-          <span>
-            {selectedParameter.direction === "input" ? "当前值" : "输出值"}
-          </span>
-          {selectedParameter.direction === "input" ? (
-            <>
-              {selectedParameter.inputReference ? (
-                <div className="runner-output-value runner-property-readonly">
-                  <span>
-                    {inputReferenceResolution.roots.get(
-                      parameterKey(selectedParameter),
-                    )?.value ?? "引用无效"}
-                  </span>
-                </div>
-              ) : (
-                <textarea
-                  aria-invalid={
-                    selectedParameterValueError ? "true" : undefined
-                  }
-                  aria-label="当前输入值"
-                  className={`runner-binding-value${
-                    selectedParameterValueError ? " is-invalid" : ""
-                  }`}
-                  onChange={(event) =>
-                    updateBinding(parameterKey(selectedParameter), {
-                      value: event.target.value,
-                    })
-                  }
-                  rows={2}
-                  value={selectedParameter.value}
-                />
-              )}
-              {selectedParameterValueError && (
-                <small className="runner-property-error">
-                  {selectedParameterValueError}
-                </small>
-              )}
-            </>
-          ) : isFreeBinding(selectedParameter) ? (
-            <>
-              <textarea
-                aria-invalid={
-                  selectedParameterValueError ? "true" : undefined
-                }
-                aria-label="手动输出值"
-                className={`runner-binding-value${
-                  selectedParameterValueError ? " is-invalid" : ""
-                }`}
-                onChange={(event) =>
-                  updateBinding(parameterKey(selectedParameter), {
-                    value: event.target.value,
-                  })
-                }
-                placeholder="可选；留空时仅使用引用输出"
-                rows={2}
-                value={selectedParameter.value}
-              />
-              <small className="runner-property-help">
-                本次输出：
-                {selectedParameterOutput?.value ?? "尚未运行"}
-                {selectedParameterOutput?.error
-                  ? `（${selectedParameterOutput.error}）`
-                  : ""}
-              </small>
-            </>
-          ) : (
-            <div
-              className="runner-output-value runner-property-readonly"
-              title={selectedParameterOutput?.error ?? undefined}
-            >
-              <span>{selectedParameterOutput?.value ?? "等待提取"}</span>
-            </div>
-          )}
-        </label>
         <div className="runner-property-field is-wide">
           <span>定位</span>
           <div
@@ -402,22 +316,6 @@ function ParameterProperties({
         </label>
       </div>
       <div className="runner-property-actions">
-        {selectedParameter.direction === "input" && (
-          <button
-            aria-label={`将 ${selectedParameter.name} 恢复默认值`}
-            disabled={
-              selectedParameter.value === selectedParameter.defaultValue
-            }
-            onClick={() =>
-              updateBinding(parameterKey(selectedParameter), {
-                value: selectedParameter.defaultValue,
-              })
-            }
-            type="button"
-          >
-            恢复默认值
-          </button>
-        )}
         <button
           aria-label={`定位 ${selectedParameter.name}`}
           onClick={() => onLocateBinding(selectedParameter)}

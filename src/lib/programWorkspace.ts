@@ -27,7 +27,9 @@ export function projectRevision(snapshot: ProjectSnapshot): string {
       path: file.path,
       content: file.content,
     })),
-    bindings: snapshot.bindings,
+    bindings: snapshot.bindings.map(
+      ({ value: _runtimeValue, ...binding }) => binding,
+    ),
   });
 }
 

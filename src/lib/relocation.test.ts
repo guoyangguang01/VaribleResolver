@@ -9,6 +9,7 @@ import {
 } from "./launcher.ts";
 import {
   relocateBindingsAfterEdit,
+  updateFileBindingLocator,
   type SourceTextChange,
 } from "./relocation.ts";
 
@@ -189,6 +190,39 @@ test("updates the default value but not the runtime value when the target is edi
   assert.equal(result.bindings[0].defaultValue, "target = 99");
   assert.equal(result.bindings[0].value, "runtime-value");
   assert.equal(result.bindings[0].locatorInvalid, undefined);
+});
+
+test("updates the default value but not the runtime value when a new locator is applied", () => {
+  const content = "VALUE: 42\nSTATUS: OK\n";
+  const binding = {
+    ...createBindingFromLocator(
+      createLaunchFile(FILE_PATH, content),
+      {
+        kind: "rowColumn",
+        startRowIndex: 1,
+        startColumnIndex: 7,
+        endRowIndex: 1,
+        endColumnIndex: 9,
+      },
+      "input",
+      "状态",
+    ),
+    value: "runtime-value",
+    defaultValue: "42",
+  };
+  const locator = {
+    kind: "rowColumn" as const,
+    startRowIndex: 2,
+    startColumnIndex: 0,
+    endRowIndex: 2,
+    endColumnIndex: 10,
+  };
+
+  const updated = updateFileBindingLocator(binding, locator, "STATUS: OK");
+
+  assert.equal(updated.locator, locator);
+  assert.equal(updated.defaultValue, "STATUS: OK");
+  assert.equal(updated.value, "runtime-value");
 });
 
 test("marks a locator invalid when its complete target is deleted", () => {

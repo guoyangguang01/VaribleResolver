@@ -118,9 +118,10 @@ test("creates input and output bindings from the editor context menu", async ({
 
   await selectInRunner(page, "initial");
   await addParameterFromContextMenu(page, "输入");
-  const inputValue = runner.getByLabel("当前输入值");
-  await expect(inputValue).toHaveValue("initial");
-  await inputValue.fill("changed");
+  await expect(runner.getByLabel("当前输入值")).toHaveCount(0);
+  const defaultValue = runner.getByLabel("参数默认值");
+  await expect(defaultValue).toHaveValue("initial");
+  await defaultValue.fill("changed");
   await expect(
     runner.getByRole("button", { name: "写回输入" }),
   ).toHaveCount(0);
@@ -132,14 +133,9 @@ test("creates input and output bindings from the editor context menu", async ({
   await addParameterFromContextMenu(page, "输出");
   await expect(runner.locator(".runner-binding.is-output")).toHaveCount(1);
 
-  await runner
-    .locator(".runner-binding.is-input")
-    .filter({ hasText: "initial" })
-    .click();
-  await runner
-    .getByRole("button", { name: "将 initial 恢复默认值" })
-    .click();
-  await expect(inputValue).toHaveValue("initial");
+  await expect(
+    runner.getByRole("button", { name: /恢复默认值/ }),
+  ).toHaveCount(0);
 });
 
 test("relocates parameter rows after editing and marks deleted targets invalid", async ({
@@ -155,7 +151,7 @@ test("relocates parameter rows after editing and marks deleted targets invalid",
   await selectInRunner(page, "42");
   await addParameterFromContextMenu(page, "输入");
   await expect(runner.getByLabel("参数默认值")).toHaveValue("42");
-  await expect(runner.getByLabel("当前输入值")).toHaveValue("42");
+  await expect(runner.getByLabel("当前输入值")).toHaveCount(0);
 
   const editor = runner.locator(
     ".runner-editor-shell .codemirror-host",
@@ -183,7 +179,6 @@ test("relocates parameter rows after editing and marks deleted targets invalid",
     });
   });
   await expect(runner.getByLabel("参数默认值")).toHaveValue("43");
-  await expect(runner.getByLabel("当前输入值")).toHaveValue("42");
 
   await editor.evaluate((element) => {
     const view = (element as HTMLElement & { __cmView?: any }).__cmView;
@@ -438,7 +433,7 @@ test("edits an existing parameter locator and applies the new range", async ({
     .filter({ hasText: "edit-locator.txt" })
     .click();
   await selectInRunner(page, "42");
-  await addParameterFromContextMenu(page, "输出");
+  await addParameterFromContextMenu(page, "输入");
 
   await runner.getByRole("button", { name: "修改 42 定位" }).click();
   await expect(runner.locator(".runner-locator-mode")).toHaveClass(
@@ -464,6 +459,8 @@ test("edits an existing parameter locator and applies the new range", async ({
   await expect(runner.getByLabel("参数定位信息")).toContainText(
     "起始列",
   );
+  await expect(runner.getByLabel("参数默认值")).toHaveValue("STATUS: OK");
+  await expect(runner.getByLabel("当前输入值")).toHaveCount(0);
 
   await runner.getByRole("button", { name: "修改 42 定位" }).click();
   await expect(runner.getByLabel("识别模式")).toHaveValue("fixedLength");
@@ -568,6 +565,7 @@ test("loads and saves a folder project with files and launch configuration", asy
   await runner.getByRole("tab", { name: "参数属性" }).click();
   await expect(runner.getByLabel("参数类型")).toHaveValue("number");
   await expect(runner.getByLabel("参数默认值")).toHaveValue("40");
+  await expect(runner.getByLabel("当前输入值")).toHaveCount(0);
   await expect(runner.getByLabel("参数单位")).toHaveValue("MPa");
   await expect(runner.getByLabel("参数备注")).toHaveValue("示例输入");
 
@@ -594,13 +592,13 @@ test("loads and saves a folder project with files and launch configuration", asy
     .click();
   await runner.getByRole("menuitem", { name: "自由输入" }).click();
   await runner.getByLabel("参数名").fill("材料");
-  await runner.getByLabel("当前输入值").fill("steel");
+  await runner.getByLabel("参数默认值").fill("steel");
   await runner
     .getByText("添加自由参数", { exact: true })
     .click();
   await runner.getByRole("menuitem", { name: "自由输出" }).click();
   await runner.getByLabel("参数名").fill("最终状态");
-  await runner.getByLabel("手动输出值").fill("ok");
+  await runner.getByLabel("参数默认值").fill("ok");
 
   await runner.getByRole("button", { name: "保存工程" }).click();
   await expect(runner.locator(".runner-notice")).toContainText("工程已保存");
@@ -621,26 +619,28 @@ test("loads and saves a folder project with files and launch configuration", asy
   expect(saved.bindings[0]).toMatchObject({
     parameterType: "boolean",
     defaultValue: "43",
-    value: "42",
     unit: "bar",
     description: "压力开关",
   });
+  expect(saved.bindings[0]).not.toHaveProperty("value");
   expect(saved.bindings[1]).toMatchObject({
     scope: "free",
     name: "材料",
     direction: "input",
-    value: "steel",
+    defaultValue: "steel",
     parameterType: "text",
   });
+  expect(saved.bindings[1]).not.toHaveProperty("value");
   expect(saved.bindings[1]).not.toHaveProperty("filePath");
   expect(saved.bindings[1]).not.toHaveProperty("locator");
   expect(saved.bindings[2]).toMatchObject({
     scope: "free",
     name: "最终状态",
     direction: "output",
-    value: "ok",
+    defaultValue: "ok",
     parameterType: "text",
   });
+  expect(saved.bindings[2]).not.toHaveProperty("value");
   expect(saved.bindings[2]).not.toHaveProperty("filePath");
   expect(saved.bindings[2]).not.toHaveProperty("locator");
   expect(

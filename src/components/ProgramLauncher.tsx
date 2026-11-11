@@ -51,6 +51,8 @@ export default function ProgramLauncher() {
     setNotice,
     isRunning,
     runtimeResult,
+    runtimeInputs,
+    outputs,
     editorContextMenu,
     setEditorContextMenu,
     leftSidebarTab,
@@ -72,9 +74,6 @@ export default function ProgramLauncher() {
     visibleBindings,
     parameterFileGroups,
     selectedParameter,
-    selectedParameterOutput,
-    inputReferenceResolution,
-    selectedParameterValueError,
     commandPreview,
     selectedBinding,
     editorHighlightRanges,
@@ -258,7 +257,6 @@ export default function ProgramLauncher() {
                 ? editingBinding
                 : null
             }
-            inputReferenceResolution={inputReferenceResolution}
             isCollapsed={layout.rightCollapsed}
             launchMode={launchMode}
             locatorMode={locatorMode}
@@ -277,8 +275,6 @@ export default function ProgramLauncher() {
             onRemoveBinding={removeBinding}
             program={program}
             selectedParameter={selectedParameter}
-            selectedParameterOutput={selectedParameterOutput ?? null}
-            selectedParameterValueError={selectedParameterValueError}
             setArgumentText={setArgumentText}
             setLaunchMode={setLaunchMode}
             setLocatorMode={setLocatorMode}
@@ -296,6 +292,7 @@ export default function ProgramLauncher() {
           collapsed={layout.dockCollapsed}
           commandPreview={commandPreview}
           isRunning={isRunning}
+          outputs={outputs}
           onCopyCommand={() => void copyCommand()}
           onResetSize={() =>
             setLayout((current) => ({
@@ -313,6 +310,7 @@ export default function ProgramLauncher() {
             }))
           }
           runtimeResult={runtimeResult}
+          runtimeInputs={runtimeInputs}
         />
 
         <footer className="app-statusbar" aria-label="应用状态">

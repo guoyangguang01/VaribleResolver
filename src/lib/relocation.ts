@@ -22,6 +22,20 @@ export interface RelocationResult {
   invalidatedParameterKeys: string[];
 }
 
+export function updateFileBindingLocator(
+  binding: FileLaunchBinding,
+  locator: LaunchLocator,
+  resolvedValue: string,
+): FileLaunchBinding {
+  return {
+    ...binding,
+    locator,
+    locatorInvalid: undefined,
+    locatorInvalidAnchor: undefined,
+    defaultValue: resolvedValue,
+  };
+}
+
 function mapPositionThroughChanges(
   position: number,
   changes: SourceTextChange[],

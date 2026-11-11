@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  bindingsWithDefaultValues,
   buildLaunchCommand,
   createAutoPositionLocator,
   createBindingFromLocator,
@@ -800,6 +801,24 @@ test("interpolates a free parameter without a file binding", () => {
     interpolateArguments(["--material", "@自由参数[In].材料"], [free]),
     ["--material", "steel"],
   );
+});
+
+test("creates runtime values from defaults without mutating project bindings", () => {
+  const projectBinding: LaunchBinding = {
+    scope: "free",
+    name: "材料",
+    direction: "input",
+    value: "stale-runtime-value",
+    parameterType: "text",
+    defaultValue: "steel",
+    unit: "",
+    description: "",
+  };
+
+  const runtimeBindings = bindingsWithDefaultValues([projectBinding]);
+
+  assert.equal(runtimeBindings[0].value, "steel");
+  assert.equal(projectBinding.value, "stale-runtime-value");
 });
 
 test("infers and validates parameter types before writing inputs", () => {

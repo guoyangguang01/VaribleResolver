@@ -19,9 +19,11 @@ import type {
 } from "../components/SourceEditor";
 import {
   relocateBindingsAfterEdit,
+  updateFileBindingLocator,
   type SourceEditorChange,
 } from "../lib/relocation";
 import {
+  bindingsWithDefaultValues,
   LauncherError,
   FREE_PARAMETER_SCOPE,
   buildLaunchCommand,
@@ -29,15 +31,11 @@ import {
   createLaunchFile,
   createLocatorForMode,
   extractOutputBindings,
-  interpolateArguments,
   isFileBinding,
   isFreeBinding,
-  parseCommandArguments,
   parameterFileName,
   parameterKey,
-  resolveInputReferences,
   resolveLaunchBinding,
-  validateParameterValue,
   type FileLaunchBinding,
   type LaunchBinding,
   type LaunchBindingDirection,
@@ -60,6 +58,7 @@ import {
 import type { ThemePreference } from "../lib/theme";
 import {
   executeProjectWithOverrides,
+  type EffectiveInputValue,
   type ProjectInputOverride,
 } from "../lib/projectExecution";
 import { createDesktopExecutionAdapter } from "../lib/desktopExecutionAdapter";
@@ -173,6 +172,9 @@ export function useProgramWorkspace() {
   >(null);
   const [notice, setNotice] = useState<RunnerNotice | null>(null);
   const [outputs, setOutputs] = useState<OutputExtraction[]>([]);
+  const [runtimeInputs, setRuntimeInputs] = useState<EffectiveInputValue[]>(
+    [],
+  );
   const [isRunning, setIsRunning] = useState(false);
   const [runtimeResult, setRuntimeResult] =
     useState<DesktopRunResult | null>(null);
@@ -402,37 +404,17 @@ export function useProgramWorkspace() {
     ) ??
     visibleBindings[0] ??
     null;
-  const selectedParameterOutput = selectedParameter
-    ? outputsByParameterKey.get(parameterKey(selectedParameter))
-    : null;
-  const inputReferenceResolution = useMemo(
-    () => resolveInputReferences(bindings),
+  const previewBindings = useMemo(
+    () => bindingsWithDefaultValues(bindings),
     [bindings],
   );
-  const selectedParameterValueError =
-    selectedParameter &&
-    (selectedParameter.direction === "input" ||
-      isFreeBinding(selectedParameter))
-      ? inputReferenceResolution.errors.get(
-          parameterKey(selectedParameter),
-        ) ??
-        (() => {
-          const root = inputReferenceResolution.roots.get(
-            parameterKey(selectedParameter),
-          );
-          return validateParameterValue(
-            root?.parameterType ?? selectedParameter.parameterType,
-            root?.value ?? selectedParameter.value,
-          );
-        })()
-      : null;
   const commandPreview = useMemo(() => {
     try {
-      return buildLaunchCommand(program, argumentText, bindings);
+      return buildLaunchCommand(program, argumentText, previewBindings);
     } catch (error) {
       return `参数错误：${errorMessage(error)}`;
     }
-  }, [argumentText, bindings, program]);
+  }, [argumentText, previewBindings, program]);
   const selectedBinding = useMemo(() => {
     if (
       !activeFile ||
@@ -698,6 +680,7 @@ export function useProgramWorkspace() {
     );
     setOutputs([]);
     setRuntimeResult(null);
+    setRuntimeInputs([]);
     const replaced = imported.filter((file) =>
       files.some((existing) => existing.path === file.path),
     ).length;
@@ -795,6 +778,7 @@ export function useProgramWorkspace() {
     setSelectedParameterId(null);
     setOutputs([]);
     setRuntimeResult(null);
+    setRuntimeInputs([]);
     setPendingRange(null);
     setEditorContextMenu(null);
     setLeftSidebarTab("files");
@@ -869,6 +853,7 @@ export function useProgramWorkspace() {
     setSelection({ start: 0, end: 0 });
     setOutputs([]);
     setRuntimeResult(null);
+    setRuntimeInputs([]);
     setEditingBindingId(null);
     setLeftSidebarTab("parameters");
     setInspectorTab("parameter");
@@ -1299,7 +1284,6 @@ export function useProgramWorkspace() {
       Pick<
         LaunchBinding,
         | "name"
-        | "value"
         | "parameterType"
         | "inputReference"
         | "outputReference"
@@ -1519,16 +1503,7 @@ export function useProgramWorkspace() {
         current.map((candidate) =>
           isFileBinding(candidate) &&
           parameterKey(candidate) === parameterKey(binding)
-            ? {
-                ...candidate,
-                locator,
-                locatorInvalid: undefined,
-                locatorInvalidAnchor: undefined,
-                value:
-                  candidate.direction === "input"
-                    ? resolved.value
-                    : candidate.value,
-              }
+            ? updateFileBindingLocator(candidate, locator, resolved.value)
             : candidate,
         ),
       );
@@ -1622,7 +1597,7 @@ export function useProgramWorkspace() {
             ? FREE_PARAMETER_SCOPE
             : parameterFileName(binding.filePath),
           parameterName: binding.name,
-          value: binding.value,
+          value: binding.defaultValue,
         }));
 
       setLayout((current) =>
@@ -1632,6 +1607,7 @@ export function useProgramWorkspace() {
       );
       setIsRunning(true);
       setRuntimeResult(null);
+      setRuntimeInputs([]);
       setNotice({ tone: "neutral", text: "程序已启动，正在等待退出..." });
       const result = await executeProjectWithOverrides({
         snapshot: {
@@ -1649,6 +1625,7 @@ export function useProgramWorkspace() {
         }),
       });
       setRuntimeResult(result.runtime);
+      setRuntimeInputs(result.inputs);
       setOutputs(result.outputs);
 
       if (result.runtime.status !== "completed") {
@@ -1779,6 +1756,6 @@ export function useProgramWorkspace() {
 
 
   return {
-    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleBindings, parameterFileGroups, selectedParameter, selectedParameterOutput, inputReferenceResolution, selectedParameterValueError, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
+    layout, setLayout, beginResize, resizeWithKeyboard, themePreference, resolvedTheme, themeMenuRef, changeTheme, files, projectName, setProjectName, projectPath, activeFilePath, setActiveFilePath, selection, setSelection, bindings, program, setProgram, argumentText, setArgumentText, workingDirectory, setWorkingDirectory, launchMode, setLaunchMode, locatorMode, setLocatorMode, editingBindingId, locatorModeValues, parameterQuery, setParameterQuery, parameterDirection, setParameterDirection, collapsedTreeKeys, setCollapsedTreeKeys, locatedBindingId, selectedParameterId, notice, setNotice, isRunning, runtimeResult, runtimeInputs, outputs, editorContextMenu, setEditorContextMenu, leftSidebarTab, setLeftSidebarTab, inspectorTab, setInspectorTab, inspectorDrawerOpen, setInspectorDrawerOpen, pendingProjectAction, fileInputRef, editorRef, editorContextMenuRef, isDirty, activeFile, selectedText, editorContextText, outputsByParameterKey, editingBinding, visibleBindings, parameterFileGroups, selectedParameter, commandPreview, selectedBinding, editorHighlightRanges, updateFile, openFiles, loadFa1Example, saveProjectFolder, requestNewProject, requestOpenProject, cancelPendingProjectAction, confirmPendingProjectAction, removeFile, moveFile, addBinding, handleEditorContextMenu, addFreeParameter, updateBinding, removeBinding, locateBinding, beginEditLocator, cancelLocatorEdit, applyLocatorEdit, handleEditorDoubleClick, runProgram, copyCommand, handleFileInput, updateLocatorValue, openProjectFolder,
   };
 }

@@ -2045,6 +2045,94 @@ body.is-resizing * {
   color: var(--danger);
 }
 
+.program-runner .runner-runtime-parameters {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.program-runner .runner-runtime-parameters-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+
+.program-runner .runner-runtime-parameters-heading strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.program-runner .runner-runtime-parameters-heading span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.program-runner .runner-runtime-parameters ul {
+  display: grid;
+  max-height: 120px;
+  gap: 3px;
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.program-runner .runner-runtime-parameters li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(90px, 0.7fr) minmax(120px, 1fr) minmax(
+      80px,
+      auto
+    );
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 11px;
+}
+
+.program-runner .runner-runtime-parameter-direction {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.program-runner .runner-runtime-parameters li strong,
+.program-runner .runner-runtime-parameters li small,
+.program-runner .runner-runtime-parameters li code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.program-runner .runner-runtime-parameters li strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.program-runner .runner-runtime-parameters li small {
+  color: var(--text-muted);
+}
+
+.program-runner .runner-runtime-parameters li code {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.program-runner .runner-runtime-parameters li.is-invalid {
+  border-color: var(--danger);
+}
+
+.program-runner .runner-runtime-parameters li.is-invalid code,
+.program-runner .runner-runtime-parameters li.is-invalid small {
+  color: var(--danger);
+}
+
 .runner-run-empty {
   display: flex;
   min-height: 90px;
@@ -2357,6 +2445,15 @@ body.is-resizing * {
 
   .program-runner .runner-runtime-streams {
     grid-template-columns: 1fr;
+  }
+
+  .program-runner .runner-runtime-parameters li {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .program-runner .runner-runtime-parameters li code,
+  .program-runner .runner-runtime-parameters li small {
+    grid-column: 2;
   }
 }
 

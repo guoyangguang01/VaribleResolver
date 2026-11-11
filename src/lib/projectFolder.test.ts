@@ -68,6 +68,7 @@ test("serializes a folder project with separate launch and parameter files", () 
   assert.deepEqual(project.outputs.outputs, []);
   assert.equal(project.parameters.bindings[0].parameterType, "number");
   assert.equal(project.parameters.bindings[0].defaultValue, "0.01");
+  assert.equal("value" in project.parameters.bindings[0], false);
   assert.equal(project.parameters.bindings[0].unit, "s");
   assert.equal(project.parameters.bindings[0].description, "计算总时长");
 });
@@ -97,12 +98,27 @@ test("parses a folder project with its generated project path", () => {
   assert.equal(parsed.bindings[0].name, "总时长");
   assert.equal(parsed.bindings[0].parameterType, "number");
   assert.equal(parsed.bindings[0].defaultValue, "0.01");
+  assert.equal(parsed.bindings[0].value, "0.01");
   assert.equal(parsed.bindings[0].unit, "s");
   assert.equal(parsed.bindings[0].description, "计算总时长");
   assert.equal(
     parsed.launch.workingDirectory,
     "D:\\Generated\\fa1\\files",
   );
+});
+
+test("ignores legacy persisted runtime values and initializes them from defaults", () => {
+  const project = JSON.parse(
+    JSON.stringify(sampleProject()),
+  ) as ProjectFolderPayload & {
+    parameters: { bindings: Array<Record<string, unknown>> };
+  };
+  project.parameters.bindings[0].value = "0.04";
+
+  const parsed = parseProjectFolder(project);
+
+  assert.equal(parsed.bindings[0].defaultValue, "0.01");
+  assert.equal(parsed.bindings[0].value, "0.01");
 });
 
 test("normalizes project file contents in memory without changing the payload", () => {
@@ -296,7 +312,6 @@ test("persists free input parameters without file or locator bindings", () => {
     scope: "free",
     name: "材料",
     direction: "input",
-    value: "steel",
     parameterType: "text",
     defaultValue: "steel",
     unit: "",
@@ -307,7 +322,6 @@ test("persists free input parameters without file or locator bindings", () => {
     name: "自由最大值",
     direction: "output",
     outputReference: "@CFX1[Out].总时长",
-    value: "",
     parameterType: "number",
     defaultValue: "",
     unit: "s",
@@ -320,6 +334,7 @@ test("persists free input parameters without file or locator bindings", () => {
   assert.equal(free.name, "材料");
   assert.equal("filePath" in free, false);
   assert.equal("locator" in free, false);
+  assert.equal(parsed.bindings[1].value, "steel");
   assert.equal(parsed.bindings[2].direction, "output");
   assert.equal(
     parsed.bindings[2].outputReference,

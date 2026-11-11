@@ -4,6 +4,8 @@ import {
   isLaunchParameterType,
   parameterKey,
   resolveInputReferences,
+  type FileLaunchBinding,
+  type FreeLaunchBinding,
   type LaunchBinding,
   type LaunchFile,
   type LaunchLocator,
@@ -62,8 +64,12 @@ export interface ProjectLaunchConfig {
   environment?: Record<string, string>;
 }
 
+export type StoredLaunchBinding =
+  | Omit<FileLaunchBinding, "value">
+  | Omit<FreeLaunchBinding, "value">;
+
 export interface ProjectParameterConfig {
-  bindings: LaunchBinding[];
+  bindings: StoredLaunchBinding[];
 }
 
 export interface ProjectFolderFile {
@@ -464,12 +470,11 @@ export function serializeProjectFolder(
     ),
   );
   const bindings = snapshot.bindings.map(
-    (binding): LaunchBinding => {
+    (binding): StoredLaunchBinding => {
       const common = {
         name: binding.name,
         inputReference: binding.inputReference,
         outputReference: binding.outputReference,
-        value: binding.value,
         parameterType: binding.parameterType,
         defaultValue: binding.defaultValue,
         unit: binding.unit,
@@ -747,10 +752,6 @@ export function parseProjectFolder(
         `第 ${index + 1} 个参数定位模式无效。`,
       );
     }
-    const value = requiredString(
-      binding.value,
-      `parameters[${index}].value`,
-    );
     if (!isLaunchParameterType(binding.parameterType)) {
       throw new ProjectFormatError(
         `第 ${index + 1} 个参数类型无效。`,
@@ -811,16 +812,17 @@ export function parseProjectFolder(
         "只有不绑定文件的输出参数可以引用其他输出。",
       );
     }
+    const defaultValue = requiredString(
+      binding.defaultValue,
+      `parameters[${index}].defaultValue`,
+    );
     const common = {
       name: requiredString(binding.name, `parameters[${index}].name`),
-      value,
+      value: defaultValue,
       parameterType: binding.parameterType,
       ...(inputReference ? { inputReference } : {}),
       ...(outputReference ? { outputReference } : {}),
-      defaultValue: requiredString(
-        binding.defaultValue,
-        `parameters[${index}].defaultValue`,
-      ),
+      defaultValue,
       unit: requiredString(
         binding.unit,
         `parameters[${index}].unit`,

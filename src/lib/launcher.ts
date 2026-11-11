@@ -388,6 +388,15 @@ export interface FreeLaunchBinding extends LaunchBindingBase {
 
 export type LaunchBinding = FileLaunchBinding | FreeLaunchBinding;
 
+export function bindingsWithDefaultValues(
+  bindings: LaunchBinding[],
+): LaunchBinding[] {
+  return bindings.map((binding) => ({
+    ...binding,
+    value: binding.defaultValue,
+  }));
+}
+
 export function isFileBinding(
   binding: LaunchBinding,
 ): binding is FileLaunchBinding {

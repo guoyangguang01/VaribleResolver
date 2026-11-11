@@ -2,13 +2,17 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
 } from "react";
+import type { OutputExtraction } from "../../lib/launcher";
+import type { EffectiveInputValue } from "../../lib/projectExecution";
 import { CopyIcon } from "./ProgramIcons";
 
 interface RunDockProps {
   collapsed: boolean;
   commandPreview: string;
   isRunning: boolean;
+  outputs: OutputExtraction[];
   runtimeResult: DesktopRunResult | null;
+  runtimeInputs: EffectiveInputValue[];
   onCopyCommand: () => void;
   onResetSize: () => void;
   onResizeKey: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
@@ -20,7 +24,9 @@ export function RunDock({
   collapsed,
   commandPreview,
   isRunning,
+  outputs,
   runtimeResult,
+  runtimeInputs,
   onCopyCommand,
   onResetSize,
   onResizeKey,
@@ -108,6 +114,46 @@ export function RunDock({
                   runtimeResult.error ||
                   "（无标准错误）"}
               </pre>
+            </div>
+            <div
+              aria-label="本次运行参数"
+              className="runner-runtime-parameters"
+            >
+              <div className="runner-runtime-parameters-heading">
+                <strong>本次运行参数</strong>
+                <span>
+                  {runtimeInputs.length} 个输入 · {outputs.length} 个输出
+                </span>
+              </div>
+              <ul>
+                {runtimeInputs.map((input) => (
+                  <li key={`input:${input.parameterKey}`}>
+                    <span className="runner-runtime-parameter-direction">
+                      输入
+                    </span>
+                    <strong>{input.name}</strong>
+                    <small>{input.filePath ?? "自由参数"}</small>
+                    <code>{input.effectiveValue || "（空）"}</code>
+                  </li>
+                ))}
+                {outputs.map((output) => (
+                  <li
+                    className={output.error ? "is-invalid" : ""}
+                    key={`output:${output.parameterKey}`}
+                  >
+                    <span className="runner-runtime-parameter-direction">
+                      输出
+                    </span>
+                    <strong>{output.name}</strong>
+                    <small>
+                      {output.error ??
+                        output.filePath ??
+                        output.fileName}
+                    </small>
+                    <code>{output.value ?? "（空）"}</code>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}
